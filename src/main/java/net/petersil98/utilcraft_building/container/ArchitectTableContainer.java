@@ -31,22 +31,23 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ArchitectTableContainer extends Container {
 
     private final IWorldPosCallable worldPosCallable;
-    private final List<BlueprintInventory> blueprints;
+    private final BlueprintInventory currentInventory;
     private final Inventory blueprintInventory = new Inventory(1);
     private final PlayerEntity playerEntity;
     private int currentLayer;
+    private int maxLayer;
     public static final int SIZE = 10;
-    public static final int MAX_LAYERS = 10;
 
-    public ArchitectTableContainer(int id, PlayerInventory playerInventory, List<BlueprintInventory> blueprints) {
-        this(id, playerInventory, blueprints, IWorldPosCallable.DUMMY);
+    public ArchitectTableContainer(int id, PlayerInventory playerInventory) {
+        this(id, playerInventory, IWorldPosCallable.DUMMY);
     }
 
-    public ArchitectTableContainer(int id, @Nonnull PlayerInventory playerInventory, List<BlueprintInventory> blueprints, IWorldPosCallable worldPosCallable) {
+    public ArchitectTableContainer(int id, @Nonnull PlayerInventory playerInventory, IWorldPosCallable worldPosCallable) {
         super(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, id);
         this.worldPosCallable = worldPosCallable;
         this.currentLayer = 0;
-        this.blueprints = blueprints;
+        this.maxLayer = 0;
+        this.currentInventory = new BlueprintInventory(SIZE * SIZE);
         this.playerEntity = playerInventory.player;
         this.addSlots(playerInventory);
     }
@@ -54,7 +55,7 @@ public class ArchitectTableContainer extends Container {
     protected void addSlots(PlayerInventory playerInventory) {
         for(int i = 0; i < SIZE; ++i) {
             for(int j = 0; j < SIZE; ++j) {
-                this.addSlot(new Slot(this.blueprints.get(this.currentLayer), j + i * SIZE, 26 + j * 18, i * 18 - 48) {
+                this.addSlot(new Slot(this.currentInventory, j + i * SIZE, 26 + j * 18, i * 18 - 48) {
                     @Override
                     public boolean isItemValid(@Nonnull ItemStack stack) {
                         return stack.getItem() instanceof BlockItem;
@@ -73,7 +74,7 @@ public class ArchitectTableContainer extends Container {
             public ItemStack onTake(@Nonnull PlayerEntity player, @Nonnull ItemStack stack) {
                 if(player instanceof ServerPlayerEntity) {
                     ItemStack result = updateBlueprintFromInventory(stack);
-                    blueprints.forEach(BlueprintInventory::clear);
+                    currentInventory.clear();
                     updateBlueprintLayer();
                     return result;
                 }
@@ -83,9 +84,9 @@ public class ArchitectTableContainer extends Container {
             @Override
             public void onSlotChanged() {
                 if(!playerEntity.world.isRemote) {
-                    if (this.getStack().getItem() instanceof Blueprint && blueprints.stream().allMatch(BlueprintInventory::isEmpty)) {
-                        updateInventoryFromBlueprint(this.getStack());
+                    if (this.getStack().getItem() instanceof Blueprint && currentInventory.isEmpty()) {
                         currentLayer = 0;
+                        updateInventoryFromBlueprint(this.getStack());
                         updateBlueprintLayer();
                     }
                 }
@@ -112,6 +113,9 @@ public class ArchitectTableContainer extends Container {
 
     public void nextLayer() {
         if(this.hasNextLayer()) {
+            ItemStack stack = blueprintInventory.getStackInSlot(0);
+            stack = this.updateBlueprintFromInventory(stack);
+            blueprintInventory.setInventorySlotContents(0, stack);
             this.currentLayer++;
             this.updateBlueprintLayer();
         }
@@ -119,13 +123,16 @@ public class ArchitectTableContainer extends Container {
 
     public void previousLayer() {
         if(this.hasPreviousLayer()) {
+            ItemStack stack = blueprintInventory.getStackInSlot(0);
+            stack = this.updateBlueprintFromInventory(stack);
+            blueprintInventory.setInventorySlotContents(0, stack);
             this.currentLayer--;
             this.updateBlueprintLayer();
         }
     }
 
     public boolean hasNextLayer() {
-        return this.currentLayer < this.blueprints.size() - 1;
+        return this.currentLayer < this.maxLayer;
     }
 
     public boolean hasPreviousLayer() {
@@ -137,15 +144,14 @@ public class ArchitectTableContainer extends Container {
     }
 
     public int getMaxLayers() {
-        return this.blueprints.size();
+        return this.maxLayer+1;
     }
 
     private void updateBlueprintLayer() {
-        BlueprintInventory inventory = this.blueprints.get(currentLayer);
         for(int i = 0; i < SIZE; ++i) {
             for (int j = 0; j < SIZE; ++j) {
                 int slot = j + i * SIZE;
-                this.getSlot(slot).putStack(inventory.getStackInSlot(slot));
+                this.getSlot(slot).putStack(currentInventory.getStackInSlot(slot));
             }
         }
         this.detectAndSendChanges();
@@ -156,45 +162,48 @@ public class ArchitectTableContainer extends Container {
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
         List<List<List<BlockState>>> pattern = patternReference.get();
         if(pattern != null && pattern.size() > 0) {
-            this.blueprints.clear();
-            for (List<List<BlockState>> lists : pattern) {
-                BlueprintInventory inventory = new BlueprintInventory(SIZE * SIZE);
-                for (int j = 0; j < lists.size(); j++) {
-                    for (int k = 0; k < lists.get(j).size(); k++) {
-                        BlockState state = lists.get(j).get(k);
-                        if(state.getBlock() instanceof AirBlock) {
-                            inventory.setInventorySlotContents(j * SIZE + k, ItemStack.EMPTY);
-                        } else {
-                            ItemStack itemStack = state.getPickBlock(new BlockRayTraceResult(Vector3d.ZERO, Direction.DOWN, BlockPos.ZERO, false),
-                                    worldPosCallable.apply((world, blockPos) -> world).orElse(null),
-                                    worldPosCallable.apply((world, blockPos) -> blockPos).orElse(null),
-                                    playerEntity);
-                            inventory.setInventorySlotContents(j * SIZE + k, itemStack);
-                        }
+            this.maxLayer = pattern.size() - 1;
+            List<List<BlockState>> lists = pattern.get(currentLayer);
+            for (int j = 0; j < lists.size(); j++) {
+                for (int k = 0; k < lists.get(j).size(); k++) {
+                    BlockState state = lists.get(j).get(k);
+                    if (state.getBlock() instanceof AirBlock) {
+                        currentInventory.setInventorySlotContents(j * SIZE + k, ItemStack.EMPTY);
+                    } else {
+                        ItemStack itemStack = state.getPickBlock(new BlockRayTraceResult(Vector3d.ZERO, Direction.DOWN, BlockPos.ZERO, false),
+                                worldPosCallable.apply((world, blockPos) -> world).orElse(null),
+                                worldPosCallable.apply((world, blockPos) -> blockPos).orElse(null),
+                                playerEntity);
+                        currentInventory.setInventorySlotContents(j * SIZE + k, itemStack);
                     }
                 }
-                this.blueprints.add(inventory);
             }
         }
     }
 
     private ItemStack updateBlueprintFromInventory(ItemStack stack) {
-        List<List<List<BlockState>>> pattern = new ArrayList<>();
-        for (BlueprintInventory blueprint : this.blueprints) {
-            List<List<BlockState>> list = new ArrayList<>();
-            for (int j = 0; j < SIZE; j++) {
-                List<BlockState> blockStates = new ArrayList<>();
-                for (int k = 0; k < SIZE; k++) {
-                    Item item = blueprint.getStackInSlot(j * SIZE + k).getItem();
-                    if(item instanceof AirItem) {
-                        blockStates.add(Blocks.AIR.getDefaultState());
-                    } else if(item instanceof BlockItem) {
-                        blockStates.add(((BlockItem)item).getBlock().getDefaultState());
-                    }
-                }
-                list.add(blockStates);
-            }
+        AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
+        List<List<List<BlockState>>> pattern = patternReference.get();
+        List<List<BlockState>> list;
+        if(pattern.size() > currentLayer) {
+            list = pattern.get(currentLayer);
+            list.clear();
+        } else {
+            list = new ArrayList<>();
             pattern.add(list);
+        }
+        for (int j = 0; j < SIZE; j++) {
+            List<BlockState> blockStates = new ArrayList<>();
+            for (int k = 0; k < SIZE; k++) {
+                Item item = currentInventory.getStackInSlot(j * SIZE + k).getItem();
+                if(item instanceof AirItem) {
+                    blockStates.add(Blocks.AIR.getDefaultState());
+                } else if(item instanceof BlockItem) {
+                    blockStates.add(((BlockItem)item).getBlock().getDefaultState());
+                }
+            }
+            list.add(blockStates);
         }
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> iBluePrint.setPattern(pattern));
         return stack;

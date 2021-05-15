@@ -52,10 +52,6 @@ public class ArchitectTable extends Block {
     @Nullable
     @SuppressWarnings("deprecation")
     public INamedContainerProvider getContainer(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
-        List<BlueprintInventory> inventoryList = new ArrayList<>();
-        for(int i = 0; i < ArchitectTableContainer.MAX_LAYERS; i++) {
-            inventoryList.add(new BlueprintInventory(ArchitectTableContainer.SIZE * ArchitectTableContainer.SIZE));
-        }
-        return new SimpleNamedContainerProvider((id, inventory, player) -> new ArchitectTableContainer(id, inventory, inventoryList, IWorldPosCallable.of(world, pos)), getTranslatedName());
+        return new SimpleNamedContainerProvider((id, inventory, player) -> new ArchitectTableContainer(id, inventory, IWorldPosCallable.of(world, pos)), getTranslatedName());
     }
 }
