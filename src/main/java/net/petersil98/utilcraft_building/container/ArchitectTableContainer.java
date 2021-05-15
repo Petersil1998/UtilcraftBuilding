@@ -82,10 +82,12 @@ public class ArchitectTableContainer extends Container {
 
             @Override
             public void onSlotChanged() {
-                if(this.getStack().getItem() instanceof Blueprint && blueprints.stream().allMatch(BlueprintInventory::isEmpty)) {
-                    updateInventoryFromBlueprint(this.getStack());
-                    currentLayer = 0;
-                    updateBlueprintLayer();
+                if(!playerEntity.world.isRemote) {
+                    if (this.getStack().getItem() instanceof Blueprint && blueprints.stream().allMatch(BlueprintInventory::isEmpty)) {
+                        updateInventoryFromBlueprint(this.getStack());
+                        currentLayer = 0;
+                        updateBlueprintLayer();
+                    }
                 }
                 super.onSlotChanged();
             }
