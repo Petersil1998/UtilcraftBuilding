@@ -1,0 +1,6 @@
+{
+  "architect_table.utilcraft_building.layer": "Layer %d/%d",
+  "block.utilcraft_building.architect_table": "Architect's Table",
+  "item.utilcraft_building.blueprint": "Blueprint",
+  "itemGroup.utilcraft_building": "Utilcraft Building"
+}
