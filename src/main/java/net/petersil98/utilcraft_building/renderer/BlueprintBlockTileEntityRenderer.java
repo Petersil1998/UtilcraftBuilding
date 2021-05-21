@@ -164,7 +164,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
                     for(int k = 0; k < pattern.get(i).get(j).size(); k++) {
                         int posZ = sign*(pattern.get(i).get(j).size()/2-k);
                         BlockState state = pattern.get(i).get(j).get(k);
-                        if(!tileEntity.getWorld().getBlockState(currentXY.north(posZ)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
+                        if(!tileEntity.getWorld().getBlockState(currentXY.south(posZ)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
                             renderBlockWithTransparency(state, matrixStack, bufferType, combinedLight, combinedOverlay);
                         }
                         matrixStack.translate(0,0,-sign);
