@@ -14,12 +14,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.world.World;
 import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
-import net.petersil98.utilcraft_building.container.BlueprintInventory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
 
 public class ArchitectTable extends Block {
 

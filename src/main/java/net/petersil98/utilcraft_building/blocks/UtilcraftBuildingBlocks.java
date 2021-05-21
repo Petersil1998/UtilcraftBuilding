@@ -8,4 +8,7 @@ public class UtilcraftBuildingBlocks {
 
     @ObjectHolder("architect_table")
     public static ArchitectTable ARCHITECT_TABLE;
+
+    @ObjectHolder("blueprint_block")
+    public static BlueprintBlock BLUEPRINT_BLOCK;
 }

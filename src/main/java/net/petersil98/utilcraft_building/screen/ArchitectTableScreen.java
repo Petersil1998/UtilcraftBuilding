@@ -8,22 +8,29 @@ import net.minecraft.client.gui.widget.button.ImageButton;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
-import net.minecraft.util.text.StringTextComponent;
-import net.minecraft.util.text.TextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.network.PacketHandler;
+import net.petersil98.utilcraft_building.network.SyncButtonPressed;
 
 import javax.annotation.Nonnull;
 
 //TODO: Fix resizing
 public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContainer> {
 
+    public static final int PREVIOUS_BUTTON_ID = 0;
+    public static final int NEXT_BUTTON_ID = 1;
+    public static final int ADD_LAYER_BUTTON_ID = 2;
+    public static final int REMOVE_LAYER_BUTTON_ID = 3;
+
     private static final ResourceLocation ARCHITECT_TABLE_GUI_TEXTURES = new ResourceLocation(UtilcraftBuilding.MOD_ID, "textures/gui/architect_table_gui.png");
     private static final ResourceLocation BUTTON_TEXTURE = new ResourceLocation(UtilcraftBuilding.MOD_ID, "textures/gui/button_arrow.png");
-    private final TextComponent layerText = new TranslationTextComponent(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID),this.container.getLayer()+1, this.container.getMaxLayers());
+    private TranslationTextComponent layerText = new TranslationTextComponent(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID),this.container.getCurrentLayer()+1, this.container.getCurrentMaxLayers());
     private ImageButton previousButton;
     private ImageButton nextButton;
+    private ImageButton addLayerButton;
+    private ImageButton removeLayerButton;
     private boolean widthTooNarrow;
 
     public ArchitectTableScreen(ArchitectTableContainer screenContainer, PlayerInventory inv, ITextComponent title) {
@@ -39,7 +46,8 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
         this.xSize += 60;
         this.previousButton = new ImageButton(this.guiLeft + 5, this.height / 2 - 49, 20, 18, 0, 0, 0, BUTTON_TEXTURE, button -> previousLayer());
         this.nextButton = new ImageButton(this.guiLeft + this.xSize - 30, this.height / 2 - 49, 20, 18, 0, 18, 0, BUTTON_TEXTURE, button -> nextLayer());
-        this.updateButtons();
+        this.addLayerButton = new ImageButton(this.guiLeft + this.xSize - 45, this.height/2 + 50, 20, 18, 0, 0, 0, BUTTON_TEXTURE, button -> addLayer());
+        this.removeLayerButton = new ImageButton(this.guiLeft + this.xSize - 45, this.height/2 + 80, 20, 18, 0, 18, 0, BUTTON_TEXTURE, button -> removeLayer());
     }
 
     public void render(@Nonnull MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
@@ -50,6 +58,13 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
             super.render(matrixStack, mouseX, mouseY, partialTicks);
         }
         this.renderHoveredTooltip(matrixStack, mouseX, mouseY);
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        this.updateTitle();
+        this.updateButtons();
     }
 
     protected void drawGuiContainerBackgroundLayer(@Nonnull MatrixStack matrixStack, float partialTicks, int x, int y) {
@@ -70,6 +85,8 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
 
         this.addButton(previousButton);
         this.addButton(nextButton);
+        this.addButton(addLayerButton);
+        this.addButton(removeLayerButton);
     }
 
     protected boolean isPointInRegion(int x, int y, int width, int height, double mouseX, double mouseY) {
@@ -86,12 +103,22 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
 
     private void nextLayer() {
         this.container.nextLayer();
-        this.updateButtons();
+        PacketHandler.sendToServer(new SyncButtonPressed(NEXT_BUTTON_ID));
     }
 
     private void previousLayer() {
         this.container.previousLayer();
-        this.updateButtons();
+        PacketHandler.sendToServer(new SyncButtonPressed(PREVIOUS_BUTTON_ID));
+    }
+
+    private void addLayer() {
+        this.container.addLayer();
+        PacketHandler.sendToServer(new SyncButtonPressed(ADD_LAYER_BUTTON_ID));
+    }
+
+    private void removeLayer() {
+        this.container.removeCurrentLayer();
+        PacketHandler.sendToServer(new SyncButtonPressed(REMOVE_LAYER_BUTTON_ID));
     }
 
     private void updateButtons() {
@@ -101,5 +128,15 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
         check = this.container.hasPreviousLayer();
         this.previousButton.active = check;
         this.previousButton.visible = check;
+        check = this.container.containsBlueprint() && this.container.getCurrentMaxLayers() > 1;
+        this.removeLayerButton.active = check;
+        this.removeLayerButton.visible = check;
+        check = this.container.containsBlueprint() && this.container.getCurrentMaxLayers() < ArchitectTableContainer.MAX_LAYERS;
+        this.addLayerButton.active = check;
+        this.addLayerButton.visible = check;
     }
-}
+
+    private void updateTitle() {
+        this.layerText = new TranslationTextComponent(this.layerText.getKey(), this.container.getCurrentLayer()+1, this.container.getCurrentMaxLayers());
+    }
+ }

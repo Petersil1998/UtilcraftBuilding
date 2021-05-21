@@ -1,7 +1,9 @@
 package net.petersil98.utilcraft_building.network;
 
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.fml.network.NetworkRegistry;
+import net.minecraftforge.fml.network.PacketDistributor;
 import net.minecraftforge.fml.network.simple.SimpleChannel;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 
@@ -18,5 +20,25 @@ public class PacketHandler {
                 PROTOCOL_VERSION::equals,
                 PROTOCOL_VERSION::equals
         );
+
+        INSTANCE.messageBuilder(SyncArchitectTableDataPoint.class, id++)
+                .encoder(SyncArchitectTableDataPoint::encode)
+                .decoder(SyncArchitectTableDataPoint::new)
+                .consumer(SyncArchitectTableDataPoint::handle)
+                .add();
+
+        INSTANCE.messageBuilder(SyncButtonPressed.class, id++)
+                .encoder(SyncButtonPressed::encode)
+                .decoder(SyncButtonPressed::new)
+                .consumer(SyncButtonPressed::handle)
+                .add();
+    }
+
+    public static <PACKET> void sendToClient(PACKET packet, ServerPlayerEntity player) {
+        INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), packet);
+    }
+
+    public static <PACKET> void sendToServer(PACKET packet){
+        INSTANCE.sendToServer(packet);
     }
 }

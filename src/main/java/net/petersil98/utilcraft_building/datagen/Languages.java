@@ -29,6 +29,7 @@ public class Languages {
 
             add(String.format("itemGroup.%s", UtilcraftBuilding.MOD_ID), "Utilcraft Building");
             add(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID), "Layer %d/%d");
+            add(String.format("blueprint.%s.tooltip", UtilcraftBuilding.MOD_ID), "%sx %s");
         }
     }
 

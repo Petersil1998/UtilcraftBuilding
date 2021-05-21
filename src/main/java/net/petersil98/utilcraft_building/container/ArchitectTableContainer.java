@@ -21,6 +21,8 @@ import net.minecraft.util.math.vector.Vector3d;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
 import net.petersil98.utilcraft_building.items.Blueprint;
+import net.petersil98.utilcraft_building.network.PacketHandler;
+import net.petersil98.utilcraft_building.network.SyncArchitectTableDataPoint;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ public class ArchitectTableContainer extends Container {
     private int currentLayer;
     private int maxLayer;
     public static final int SIZE = 10;
+    public static final int MAX_LAYERS = 50;
 
     public ArchitectTableContainer(int id, PlayerInventory playerInventory) {
         this(id, playerInventory, IWorldPosCallable.DUMMY);
@@ -58,7 +61,7 @@ public class ArchitectTableContainer extends Container {
                 this.addSlot(new Slot(this.currentInventory, j + i * SIZE, 26 + j * 18, i * 18 - 48) {
                     @Override
                     public boolean isItemValid(@Nonnull ItemStack stack) {
-                        return stack.getItem() instanceof BlockItem;
+                        return stack.getItem() instanceof BlockItem && !getBlueprint().equals(ItemStack.EMPTY);
                     }
                 });
             }
@@ -72,10 +75,13 @@ public class ArchitectTableContainer extends Container {
             @Nonnull
             @Override
             public ItemStack onTake(@Nonnull PlayerEntity player, @Nonnull ItemStack stack) {
-                if(player instanceof ServerPlayerEntity) {
+                if(!player.world.isRemote) {
                     ItemStack result = updateBlueprintFromInventory(stack);
+                    currentLayer = 0;
+                    maxLayer = 0;
                     currentInventory.clear();
-                    updateBlueprintLayer();
+                    detectAndSendChanges();
+                    syncData();
                     return result;
                 }
                 return super.onTake(player, stack);
@@ -86,8 +92,10 @@ public class ArchitectTableContainer extends Container {
                 if(!playerEntity.world.isRemote) {
                     if (this.getStack().getItem() instanceof Blueprint && currentInventory.isEmpty()) {
                         currentLayer = 0;
+                        maxLayer = 0;
                         updateInventoryFromBlueprint(this.getStack());
-                        updateBlueprintLayer();
+                        detectAndSendChanges();
+                        syncData();
                     }
                 }
                 super.onSlotChanged();
@@ -112,22 +120,28 @@ public class ArchitectTableContainer extends Container {
     }
 
     public void nextLayer() {
-        if(this.hasNextLayer()) {
-            ItemStack stack = blueprintInventory.getStackInSlot(0);
+        if (this.hasNextLayer() && !playerEntity.world.isRemote) {
+            ItemStack stack = this.getBlueprint();
             stack = this.updateBlueprintFromInventory(stack);
-            blueprintInventory.setInventorySlotContents(0, stack);
             this.currentLayer++;
-            this.updateBlueprintLayer();
+            this.updateInventoryFromBlueprint(stack);
+            this.blueprintInventory.setInventorySlotContents(0, stack);
+            this.detectAndSendChanges();
+            this.syncData();
         }
     }
 
     public void previousLayer() {
-        if(this.hasPreviousLayer()) {
-            ItemStack stack = blueprintInventory.getStackInSlot(0);
+        if(this.hasPreviousLayer() && !playerEntity.world.isRemote) {
+            ItemStack stack = this.getBlueprint();
             stack = this.updateBlueprintFromInventory(stack);
-            blueprintInventory.setInventorySlotContents(0, stack);
-            this.currentLayer--;
-            this.updateBlueprintLayer();
+            if(hasPreviousLayer()) {
+                this.currentLayer--;
+            }
+            this.updateInventoryFromBlueprint(stack);
+            this.blueprintInventory.setInventorySlotContents(0, stack);
+            this.detectAndSendChanges();
+            this.syncData();
         }
     }
 
@@ -139,22 +153,53 @@ public class ArchitectTableContainer extends Container {
         return this.currentLayer > 0;
     }
 
-    public int getLayer() {
+    public int getCurrentLayer() {
         return this.currentLayer;
     }
 
-    public int getMaxLayers() {
+    public int getCurrentMaxLayers() {
         return this.maxLayer+1;
     }
 
-    private void updateBlueprintLayer() {
-        for(int i = 0; i < SIZE; ++i) {
-            for (int j = 0; j < SIZE; ++j) {
-                int slot = j + i * SIZE;
-                this.getSlot(slot).putStack(currentInventory.getStackInSlot(slot));
-            }
+    public void addLayer() {
+        if(!playerEntity.world.isRemote) {
+            this.maxLayer++;
+            this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+                List<List<BlockState>> emptyList = new ArrayList<>();
+                for (int i = 0; i < SIZE; i++) {
+                    List<BlockState> blockStates = new ArrayList<>();
+                    for (int j = 0; j < SIZE; j++) {
+                        blockStates.add(Blocks.AIR.getDefaultState());
+                    }
+                    emptyList.add(blockStates);
+                }
+                iBluePrint.getPattern().add(emptyList);
+            });
+            this.detectAndSendChanges();
+            this.syncData();
         }
-        this.detectAndSendChanges();
+    }
+
+    public void removeCurrentLayer() {
+        if(!playerEntity.world.isRemote) {
+            AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
+            this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
+            List<List<List<BlockState>>> pattern = patternReference.get();
+            pattern.remove(this.currentLayer);
+            this.maxLayer--;
+            this.currentLayer--;
+            this.updateInventoryFromBlueprint(this.getBlueprint());
+            this.detectAndSendChanges();
+            this.syncData();
+        }
+    }
+
+    private ItemStack getBlueprint() {
+        return this.blueprintInventory.getStackInSlot(0);
+    }
+
+    public boolean containsBlueprint() {
+        return !this.getBlueprint().equals(ItemStack.EMPTY);
     }
 
     private void updateInventoryFromBlueprint(ItemStack stack) {
@@ -244,5 +289,17 @@ public class ArchitectTableContainer extends Container {
     public void onContainerClosed(@Nonnull PlayerEntity player) {
         super.onContainerClosed(player);
         this.worldPosCallable.consume((p_217068_2_, p_217068_3_) -> this.clearContainer(player, p_217068_2_, this.blueprintInventory));
+    }
+
+    public void setCurrentLayer(int currentLayer) {
+        this.currentLayer = currentLayer;
+    }
+
+    public void setMaxLayer(int maxLayer) {
+        this.maxLayer = maxLayer;
+    }
+
+    private void syncData() {
+        PacketHandler.sendToClient(new SyncArchitectTableDataPoint(this.currentLayer, this.maxLayer), (ServerPlayerEntity) playerEntity);
     }
 }
