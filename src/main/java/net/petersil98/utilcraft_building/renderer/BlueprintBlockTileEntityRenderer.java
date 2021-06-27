@@ -14,7 +14,6 @@ import net.minecraft.client.renderer.tileentity.TileEntityRenderer;
 import net.minecraft.client.renderer.tileentity.TileEntityRendererDispatcher;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.item.ItemStack;
-import net.minecraft.state.DirectionProperty;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
@@ -43,13 +42,13 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
 
     private final BlockModelShapes shapes;
     private final BlockColors colors;
-    private final Minecraft instance;
+    private final Minecraft minecraftInstance;
 
     public BlueprintBlockTileEntityRenderer(TileEntityRendererDispatcher rendererDispatcher) {
         super(rendererDispatcher);
-        this.instance = Minecraft.getInstance();
-        this.shapes = this.instance.getModelManager().getBlockModelShapes();
-        this.colors = this.instance.getBlockColors();
+        this.minecraftInstance = Minecraft.getInstance();
+        this.shapes = this.minecraftInstance.getModelManager().getBlockModelShapes();
+        this.colors = this.minecraftInstance.getBlockColors();
     }
 
     public void render(@Nonnull BlueprintBlockTileEntity tileEntity, float partialTicks, @Nonnull MatrixStack matrixStack, @Nonnull IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay) {
@@ -67,7 +66,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
     private void renderRotatingCube(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, @Nonnull IRenderTypeBuffer buffer) {
         Random rnd = new Random(tileEntity.getPos().getX() * 337L + tileEntity.getPos().getY() * 37L + tileEntity.getPos().getZ() * 13L);
         IVertexBuilder builder = buffer.getBuffer(RenderType.getTranslucent());
-        IBakedModel model = this.instance.getModelManager().getModel(CUBE_MODEL);
+        IBakedModel model = this.minecraftInstance.getModelManager().getModel(CUBE_MODEL);
 
         long time = System.currentTimeMillis();
 
@@ -79,7 +78,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
         matrixStack.rotate(rotation);
         matrixStack.translate(-.5, -.5, -.5);
 
-        this.instance.getBlockRendererDispatcher().getBlockModelRenderer().renderModel(this.instance.world, model, tileEntity.getBlockState(), tileEntity.getPos(), matrixStack, builder, true, rnd, tileEntity.getBlockState().getPositionRandom(tileEntity.getPos()), OverlayTexture.NO_OVERLAY, EmptyModelData.INSTANCE);
+        this.minecraftInstance.getBlockRendererDispatcher().getBlockModelRenderer().renderModel(this.minecraftInstance.world, model, tileEntity.getBlockState(), tileEntity.getPos(), matrixStack, builder, true, rnd, tileEntity.getBlockState().getPositionRandom(tileEntity.getPos()), OverlayTexture.NO_OVERLAY, EmptyModelData.INSTANCE);
     }
 
     private void renderLayoutBlocks(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, IRenderTypeBuffer bufferType, int combinedLight, int combinedOverlay) {
@@ -182,17 +181,19 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
         BlockRenderType blockrendertype = blockState.getRenderType();
         if (blockrendertype != BlockRenderType.INVISIBLE) {
             switch(blockrendertype) {
-                case MODEL:
-                    IBakedModel bakedmodel = this.shapes.getModel(blockState);
+                case MODEL: {
+                    IBakedModel bakedModel = this.shapes.getModel(blockState);
                     int color = this.colors.getColor(blockState, null, null, 0);
-                    float red = (float)(color >> 16 & 255) / 255.0F;
-                    float green = (float)(color >> 8 & 255) / 255.0F;
-                    float blue = (float)(color & 255) / 255.0F;
-                    renderModel(matrixStack.getLast(), bufferType.getBuffer(RenderType.getTranslucent()), blockState, bakedmodel, red, green, blue, combinedLight, combinedOverlay);
+                    float red = (float) (color >> 16 & 255) / 255.0F;
+                    float green = (float) (color >> 8 & 255) / 255.0F;
+                    float blue = (float) (color & 255) / 255.0F;
+                    renderModel(matrixStack.getLast(), bufferType.getBuffer(RenderType.getTranslucent()), blockState, bakedModel, red, green, blue, combinedLight, combinedOverlay);
                     break;
-                case ENTITYBLOCK_ANIMATED:
+                }
+                case ENTITYBLOCK_ANIMATED: {
                     ItemStack stack = new ItemStack(blockState.getBlock());
                     stack.getItem().getItemStackTileEntityRenderer().func_239207_a_(stack, ItemCameraTransforms.TransformType.NONE, matrixStack, bufferType, combinedLight, combinedOverlay);
+                }
             }
         }
     }

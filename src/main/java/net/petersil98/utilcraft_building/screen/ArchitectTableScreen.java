@@ -10,7 +10,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
-import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 import net.petersil98.utilcraft_building.network.PacketHandler;
 import net.petersil98.utilcraft_building.network.SyncButtonPressed;
 
@@ -80,13 +80,13 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
     protected void drawGuiContainerForegroundLayer(@Nonnull MatrixStack matrixStack, int x, int y) {
         super.drawGuiContainerForegroundLayer(matrixStack, x, y);
 
-        int stringWidth = this.font.getStringWidth(layerText.getString());
-        this.font.func_243248_b(matrixStack, layerText, this.xSize - stringWidth - 10, this.titleY, 4210752);
+        int stringWidth = this.font.getStringWidth(this.layerText.getString());
+        this.font.func_243248_b(matrixStack, this.layerText, this.xSize - stringWidth - 10, this.titleY, 4210752);
 
-        this.addButton(previousButton);
-        this.addButton(nextButton);
-        this.addButton(addLayerButton);
-        this.addButton(removeLayerButton);
+        this.addButton(this.previousButton);
+        this.addButton(this.nextButton);
+        this.addButton(this.addLayerButton);
+        this.addButton(this.removeLayerButton);
     }
 
     protected boolean isPointInRegion(int x, int y, int width, int height, double mouseX, double mouseY) {
@@ -139,4 +139,4 @@ public class ArchitectTableScreen extends ContainerScreen<ArchitectTableContaine
     private void updateTitle() {
         this.layerText = new TranslationTextComponent(this.layerText.getKey(), this.container.getCurrentLayer()+1, this.container.getCurrentMaxLayers());
     }
- }
+}

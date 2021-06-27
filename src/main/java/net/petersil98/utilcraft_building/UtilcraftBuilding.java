@@ -12,7 +12,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.particles.ParticleType;
 import net.minecraft.potion.Effect;
 import net.minecraft.tileentity.TileEntityType;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.common.MinecraftForge;
@@ -27,13 +26,15 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.petersil98.utilcraft_building.blocks.ArchitectTable;
 import net.petersil98.utilcraft_building.blocks.BlueprintBlock;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
-import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.container.BlueprintBlockContainer;
+import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 import net.petersil98.utilcraft_building.container.UtilcraftBuildingContainer;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
 import net.petersil98.utilcraft_building.items.Blueprint;
 import net.petersil98.utilcraft_building.network.PacketHandler;
 import net.petersil98.utilcraft_building.renderer.BlueprintBlockTileEntityRenderer;
 import net.petersil98.utilcraft_building.screen.ArchitectTableScreen;
+import net.petersil98.utilcraft_building.screen.BlueprintBlockScreen;
 import net.petersil98.utilcraft_building.tile_entities.BlueprintBlockTileEntity;
 import net.petersil98.utilcraft_building.tile_entities.UtilcraftBuildingTileEntities;
 
@@ -69,6 +70,7 @@ public class UtilcraftBuilding
     private void clientSetup(@Nonnull final FMLClientSetupEvent event) {
         RenderTypeLookup.setRenderLayer(UtilcraftBuildingBlocks.ARCHITECT_TABLE, RenderType.getTranslucent());
         ScreenManager.registerFactory(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, ArchitectTableScreen::new);
+        ScreenManager.registerFactory(UtilcraftBuildingContainer.BLUEPRINT_BLOCK_CONTAINER, BlueprintBlockScreen::new);
         ClientRegistry.bindTileEntityRenderer(UtilcraftBuildingTileEntities.BLUEPRINT_BLOCK, BlueprintBlockTileEntityRenderer::new);
     }
 
@@ -79,7 +81,7 @@ public class UtilcraftBuilding
     @Mod.EventBusSubscriber(bus=Mod.EventBusSubscriber.Bus.MOD)
     public static class RegistryEvents {
         @SubscribeEvent
-        public static void registerBlocks(final RegistryEvent.Register<Block> blockRegistryEvent) {
+        public static void registerBlocks(@Nonnull final RegistryEvent.Register<Block> blockRegistryEvent) {
             blockRegistryEvent.getRegistry().register(new ArchitectTable().setRegistryName("architect_table"));
             blockRegistryEvent.getRegistry().register(new BlueprintBlock().setRegistryName("blueprint_block"));
         }
@@ -92,21 +94,14 @@ public class UtilcraftBuilding
         }
 
         @SubscribeEvent
-        public static void registerEffects(@Nonnull final RegistryEvent.Register<Effect> effectRegistryEvent) {
-        }
-
-        @SubscribeEvent
         public static void registerEntities(@Nonnull final RegistryEvent.Register<TileEntityType<?>> tileEntityRegister) {
             tileEntityRegister.getRegistry().register(TileEntityType.Builder.create(BlueprintBlockTileEntity::new, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK).build(null).setRegistryName("blueprint_block"));
         }
 
         @SubscribeEvent
-        public static void registerParticleTypes(@Nonnull final RegistryEvent.Register<ParticleType<?>> particleTypeRegister) {
-        }
-
-        @SubscribeEvent
         public static void registerContainer(@Nonnull final RegistryEvent.Register<ContainerType<?>> containerRegister) {
             containerRegister.getRegistry().register(IForgeContainerType.create((windowId, inv, data) -> new ArchitectTableContainer(windowId, inv)).setRegistryName("architect_table"));
+            containerRegister.getRegistry().register(IForgeContainerType.create(BlueprintBlockContainer::new).setRegistryName("blueprint_block"));
         }
     }
 }

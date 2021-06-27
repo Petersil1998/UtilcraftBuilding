@@ -5,13 +5,18 @@ import net.minecraftforge.common.data.LanguageProvider;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.items.UtilcraftBuildingItems;
+import org.jetbrains.annotations.Contract;
+
+import javax.annotation.Nonnull;
 
 public class Languages {
 
+    @Nonnull
     public static English getEnglish(DataGenerator generator){
         return new English(generator);
     }
 
+    @Nonnull
     public static German getGerman(DataGenerator generator){
         return new German(generator);
     }
@@ -26,6 +31,7 @@ public class Languages {
         protected void addTranslations() {
             add(UtilcraftBuildingBlocks.ARCHITECT_TABLE, "Architect's Table");
             add(UtilcraftBuildingItems.BLUEPRINT, "Blueprint");
+            add(UtilcraftBuildingBlocks.BLUEPRINT_BLOCK, "Blueprint Layout");
 
             add(String.format("itemGroup.%s", UtilcraftBuilding.MOD_ID), "Utilcraft Building");
             add(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID), "Layer %d/%d");

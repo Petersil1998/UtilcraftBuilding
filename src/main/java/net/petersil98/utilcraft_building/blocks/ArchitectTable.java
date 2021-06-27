@@ -13,7 +13,7 @@ import net.minecraft.util.IWorldPosCallable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.world.World;
-import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

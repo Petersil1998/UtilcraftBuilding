@@ -1,4 +1,4 @@
-package net.petersil98.utilcraft_building.container;
+package net.petersil98.utilcraft_building.container.architect_table;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.IInventory;

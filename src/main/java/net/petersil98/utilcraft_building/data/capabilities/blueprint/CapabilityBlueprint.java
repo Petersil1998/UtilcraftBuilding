@@ -9,7 +9,7 @@ import net.minecraft.util.Direction;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -26,9 +26,9 @@ public class CapabilityBlueprint {
 
     public static class Storage implements Capability.IStorage<IBluePrint> {
 
-        @Nullable
+        @Nonnull
         @Override
-        public INBT writeNBT(Capability<IBluePrint> capability, @Nonnull IBluePrint instance, Direction side) {
+        public CompoundNBT writeNBT(Capability<IBluePrint> capability, @Nonnull IBluePrint instance, Direction side) {
             CompoundNBT tag = new CompoundNBT();
             List<List<List<BlockState>>> pattern = instance.getPattern();
             ListNBT list = new ListNBT();

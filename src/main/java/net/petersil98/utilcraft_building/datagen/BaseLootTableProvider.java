@@ -173,7 +173,7 @@ public abstract class BaseLootTableProvider extends ForgeLootTableProvider {
         writeTables(cache, tables);
     }
 
-    private void writeTables(DirectoryCache cache, Map<ResourceLocation, LootTable> tables) {
+    private void writeTables(DirectoryCache cache, @Nonnull Map<ResourceLocation, LootTable> tables) {
         Path outputFolder = this.generator.getOutputFolder();
         tables.forEach((key, lootTable) -> {
             Path path = outputFolder.resolve("data/" + key.getNamespace() + "/loot_tables/" + key.getPath() + ".json");

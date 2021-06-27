@@ -1,7 +1,6 @@
 package net.petersil98.utilcraft_building.items;
 
 import net.minecraft.advancements.CriteriaTriggers;
-import net.minecraft.block.AirBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SoundType;
@@ -24,11 +23,12 @@ import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.BlueprintProvider;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
 import net.petersil98.utilcraft_building.tile_entities.BlueprintBlockTileEntity;
+import net.petersil98.utilcraft_building.utils.BlueprintUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Blueprint extends Item {
 
@@ -48,24 +48,7 @@ public class Blueprint extends Item {
     @Override
     public void addInformation(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag) {
         super.addInformation(stack, world, tooltip, flag);
-        HashMap<BlockState, Integer> blocks = new HashMap<>();
-        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
-            if(iBluePrint.getPattern() != null) {
-                iBluePrint.getPattern().forEach(
-                        lists -> lists.forEach(
-                                blockStates -> blockStates.forEach(blockState -> {
-                                    if(!(blockState.getBlock() instanceof AirBlock)) {
-                                        if (blocks.containsKey(blockState)) {
-                                            blocks.put(blockState, blocks.get(blockState) + 1);
-                                        } else {
-                                            blocks.put(blockState, 1);
-                                        }
-                                    }
-                                })
-                        )
-                );
-            }
-        });
+        Map<BlockState, Integer> blocks = BlueprintUtils.listBlockStatesFromCapability(stack);
         blocks.forEach((blockState, count) -> tooltip.add(new TranslationTextComponent("blueprint.utilcraft_building.tooltip", count, new TranslationTextComponent(blockState.getBlock().getTranslationKey())).setStyle(Style.EMPTY.setColor(Color.fromInt(TextFormatting.BLUE.getColor())))));
     }
 
@@ -75,7 +58,7 @@ public class Blueprint extends Item {
         return this.tryPlace(new BlockItemUseContext(context));
     }
 
-    private ActionResultType tryPlace(BlockItemUseContext context) {
+    private ActionResultType tryPlace(@Nonnull BlockItemUseContext context) {
         if (!context.canPlace()) {
             return ActionResultType.FAIL;
         } else {
@@ -95,7 +78,7 @@ public class Blueprint extends Item {
                     otherState = this.getRealBlockState(blockpos, world, itemstack, otherState);
                     BlockItem.setTileEntityNBT(world, playerentity, blockpos, itemstack);
                     other.onBlockPlacedBy(world, blockpos, otherState, playerentity, itemstack);
-                    setCapability(world, blockpos, context.getItem());
+                    this.setCapability(world, blockpos, context.getItem());
                     if (playerentity instanceof ServerPlayerEntity) {
                         CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity)playerentity, blockpos, itemstack);
                     }
@@ -109,15 +92,15 @@ public class Blueprint extends Item {
         }
     }
 
-    private BlockState getRealBlockState(BlockPos blockPos, World world, ItemStack itemStack, BlockState blockState) {
+    private BlockState getRealBlockState(BlockPos blockPos, World world, @Nonnull ItemStack itemStack, BlockState blockState) {
         BlockState blockstate = blockState;
         CompoundNBT compoundnbt = itemStack.getTag();
         if (compoundnbt != null) {
             CompoundNBT blockStateTag = compoundnbt.getCompound("BlockStateTag");
-            StateContainer<Block, BlockState> statecontainer = blockState.getBlock().getStateContainer();
+            StateContainer<Block, BlockState> stateContainer = blockState.getBlock().getStateContainer();
 
             for(String s : blockStateTag.keySet()) {
-                Property<?> property = statecontainer.getProperty(s);
+                Property<?> property = stateContainer.getProperty(s);
                 if (property != null) {
                     String s1 = blockStateTag.get(s).getString();
                     blockstate = applyProperty(blockstate, property, s1);
@@ -132,11 +115,11 @@ public class Blueprint extends Item {
         return blockstate;
     }
 
-    private static <T extends Comparable<T>> BlockState applyProperty(BlockState blockState, Property<T> property, String state) {
+    private static <T extends Comparable<T>> BlockState applyProperty(BlockState blockState, @Nonnull Property<T> property, String state) {
         return property.parseValue(state).map((value) -> blockState.with(property, value)).orElse(blockState);
     }
 
-    private void setCapability(World world, BlockPos pos, ItemStack itemStack) {
+    private void setCapability(@Nonnull World world, BlockPos pos, ItemStack itemStack) {
         TileEntity tileentity = world.getTileEntity(pos);
         if (tileentity instanceof BlueprintBlockTileEntity) {
             itemStack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY)

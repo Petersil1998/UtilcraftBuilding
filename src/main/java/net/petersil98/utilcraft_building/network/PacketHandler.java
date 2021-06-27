@@ -32,6 +32,24 @@ public class PacketHandler {
                 .decoder(SyncButtonPressed::new)
                 .consumer(SyncButtonPressed::handle)
                 .add();
+
+        INSTANCE.messageBuilder(SyncBlueprintItemCapability.class, id++)
+                .encoder(SyncBlueprintItemCapability::encode)
+                .decoder(SyncBlueprintItemCapability::new)
+                .consumer(SyncBlueprintItemCapability::handle)
+                .add();
+
+        INSTANCE.messageBuilder(SyncBlueprintTECapability.class, id++)
+                .encoder(SyncBlueprintTECapability::encode)
+                .decoder(SyncBlueprintTECapability::new)
+                .consumer(SyncBlueprintTECapability::handle)
+                .add();
+
+        INSTANCE.messageBuilder(CreateStructurePacket.class, id++)
+                .encoder(CreateStructurePacket::encode)
+                .decoder(CreateStructurePacket::new)
+                .consumer(CreateStructurePacket::handle)
+                .add();
     }
 
     public static <PACKET> void sendToClient(PACKET packet, ServerPlayerEntity player) {

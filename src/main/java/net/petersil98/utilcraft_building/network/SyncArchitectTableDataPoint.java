@@ -19,21 +19,21 @@ public class SyncArchitectTableDataPoint {
     }
 
     public SyncArchitectTableDataPoint(@Nonnull PacketBuffer packetBuffer) {
-        currentLayer = packetBuffer.readInt();
-        maxLayer = packetBuffer.readInt();
+        this.currentLayer = packetBuffer.readInt();
+        this.maxLayer = packetBuffer.readInt();
     }
 
     public void encode(@Nonnull PacketBuffer buf) {
-        buf.writeInt(currentLayer);
-        buf.writeInt(maxLayer);
+        buf.writeInt(this.currentLayer);
+        buf.writeInt(this.maxLayer);
     }
 
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             if(Minecraft.getInstance().currentScreen instanceof ArchitectTableScreen) {
                 ArchitectTableScreen screen = (ArchitectTableScreen) Minecraft.getInstance().currentScreen;
-                screen.getContainer().setMaxLayer(maxLayer);
-                screen.getContainer().setCurrentLayer(currentLayer);
+                screen.getContainer().setMaxLayer(this.maxLayer);
+                screen.getContainer().setCurrentLayer(this.currentLayer);
             }
         });
         return true;

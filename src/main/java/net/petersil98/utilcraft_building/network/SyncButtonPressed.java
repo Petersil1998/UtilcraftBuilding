@@ -3,7 +3,7 @@ package net.petersil98.utilcraft_building.network;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
-import net.petersil98.utilcraft_building.container.ArchitectTableContainer;
+import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 import net.petersil98.utilcraft_building.screen.ArchitectTableScreen;
 
 import javax.annotation.Nonnull;
@@ -18,18 +18,18 @@ public class SyncButtonPressed {
     }
 
     public SyncButtonPressed(@Nonnull PacketBuffer packetBuffer) {
-        buttonId = packetBuffer.readInt();
+        this.buttonId = packetBuffer.readInt();
     }
 
     public void encode(@Nonnull PacketBuffer buf) {
-        buf.writeInt(buttonId);
+        buf.writeInt(this.buttonId);
     }
 
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayerEntity player = ctx.get().getSender();
             if(player != null && player.openContainer instanceof ArchitectTableContainer) {
-                switch (buttonId) {
+                switch (this.buttonId) {
                     case ArchitectTableScreen.PREVIOUS_BUTTON_ID: {
                         ((ArchitectTableContainer) player.openContainer).previousLayer();
                         break;
