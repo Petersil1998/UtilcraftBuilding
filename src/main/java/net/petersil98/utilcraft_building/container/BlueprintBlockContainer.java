@@ -41,7 +41,7 @@ public class BlueprintBlockContainer extends Container {
     private final int rows;
 
     public BlueprintBlockContainer(int id, PlayerInventory playerInventory, @Nonnull PacketBuffer data) {
-        this(id, playerInventory, IWorldPosCallable.of(playerInventory.player.world, data.readBlockPos()));
+        this(id, playerInventory, IWorldPosCallable.create(playerInventory.player.level, data.readBlockPos()));
     }
 
     public BlueprintBlockContainer(int id, @Nonnull PlayerInventory playerInventory, IWorldPosCallable worldPosCallable) {
@@ -51,7 +51,7 @@ public class BlueprintBlockContainer extends Container {
         this.rows = 3;
         this.inventory = new Inventory(this.rows * 9);
         this.addSlots(playerInventory);
-        if(!player.world.isRemote) {
+        if(!player.level.isClientSide) {
             syncCapabilitiesToClient();
         }
     }
@@ -61,14 +61,14 @@ public class BlueprintBlockContainer extends Container {
             for (int j = 0; j < 9; ++j) {
                 this.addSlot(new Slot(this.inventory, j + i * 9, 8 + j * 18, i * 18 + 18) {
                     @Override
-                    public boolean isItemValid(@Nonnull ItemStack stack) {
+                    public boolean mayPlace(@Nonnull ItemStack stack) {
                         return true;
                     }
 
                     @Override
-                    public void onSlotChanged() {
-                        super.onSlotChanged();
-                        if(!player.world.isRemote) {
+                    public void setChanged() {
+                        super.setChanged();
+                        if(!player.level.isClientSide) {
                             syncCapabilitiesToClient();
                         }
                     }
@@ -90,24 +90,24 @@ public class BlueprintBlockContainer extends Container {
     /**
      * Determines whether supplied player can use this container
      */
-    public boolean canInteractWith(@Nonnull PlayerEntity player) {
-        return isWithinUsableDistance(this.worldPosCallable, player, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK);
+    public boolean stillValid(@Nonnull PlayerEntity player) {
+        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK);
     }
 
     /**
      * Called when the container is closed.
      */
-    public void onContainerClosed(@Nonnull PlayerEntity player) {
-        super.onContainerClosed(player);
-        this.worldPosCallable.consume((world, blockPos) -> this.clearContainer(player, world, this.inventory));
+    public void removed(@Nonnull PlayerEntity player) {
+        super.removed(player);
+        this.worldPosCallable.execute((world, blockPos) -> this.clearContainer(player, world, this.inventory));
     }
 
     public TileEntity getTileEntity() {
-        return worldPosCallable.apply(World::getTileEntity).orElse(null);
+        return worldPosCallable.evaluate(World::getBlockEntity).orElse(null);
     }
 
     private void syncCapabilitiesToClient() {
-        PacketHandler.sendToClient(new SyncBlueprintTECapability(worldPosCallable.apply((world, blockPos) -> blockPos).orElse(BlockPos.ZERO), player.world), (ServerPlayerEntity) player);
+        PacketHandler.sendToClient(new SyncBlueprintTECapability(worldPosCallable.evaluate((world, blockPos) -> blockPos).orElse(BlockPos.ZERO), player.level), (ServerPlayerEntity) player);
     }
 
     public Inventory getContainerInventory() {
@@ -116,24 +116,24 @@ public class BlueprintBlockContainer extends Container {
 
     @Nonnull
     @Override
-    public ItemStack transferStackInSlot(@Nonnull PlayerEntity player, int index) {
+    public ItemStack quickMoveStack(@Nonnull PlayerEntity player, int index) {
         ItemStack itemstack = ItemStack.EMPTY;
-        Slot slot = this.inventorySlots.get(index);
-        if (slot != null && slot.getHasStack()) {
-            ItemStack stackInSlot = slot.getStack();
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stackInSlot = slot.getItem();
             itemstack = stackInSlot.copy();
             if (index < this.rows * 9) {
-                if (!this.mergeItemStack(stackInSlot, this.rows * 9, this.inventorySlots.size(), true)) {
+                if (!this.moveItemStackTo(stackInSlot, this.rows * 9, this.slots.size(), true)) {
                     return ItemStack.EMPTY;
                 }
-            } else if (!this.mergeItemStack(stackInSlot, 0, this.rows * 9, false)) {
+            } else if (!this.moveItemStackTo(stackInSlot, 0, this.rows * 9, false)) {
                 return ItemStack.EMPTY;
             }
 
             if (stackInSlot.isEmpty()) {
-                slot.putStack(ItemStack.EMPTY);
+                slot.set(ItemStack.EMPTY);
             } else {
-                slot.onSlotChanged();
+                slot.setChanged();
             }
         }
 
@@ -141,11 +141,11 @@ public class BlueprintBlockContainer extends Container {
     }
 
     public void createStructure() {
-        BlockState blockState = this.worldPosCallable.apply(World::getBlockState).orElse(null);
+        BlockState blockState = this.worldPosCallable.evaluate(World::getBlockState).orElse(null);
         if(blockState != null) {
             AtomicReference<List<List<List<BlockState>>>> pattern = new AtomicReference<>();
             this.getTileEntity().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> pattern.set(iBluePrint.getPattern()));
-            Direction direction = blockState.get(BlueprintBlock.FACING);
+            Direction direction = blockState.getValue(BlueprintBlock.FACING);
             Map<Block, Integer> required = BlueprintUtils.fromBlockStateToBlock(BlueprintUtils.listBlockStatesFromCapability(this.getTileEntity()));
             Map<Item, Integer> supplied = BlueprintUtils.listBlockItemsFromInventory(this.getContainerInventory());
             Map<Block, Integer> blocksSupplied = supplied.entrySet().stream().filter(e -> e.getKey() instanceof BlockItem).collect(Collectors.toMap((e -> ((BlockItem) e.getKey()).getBlock()), Map.Entry::getValue));
@@ -154,22 +154,22 @@ public class BlueprintBlockContainer extends Container {
                     this.removeItemFromInventory(entry.getKey().asItem(), required.get(entry.getKey()));
                 }
             }
-            this.onContainerClosed(this.player);
-            this.getTileEntity().remove();
-            BlockPos pos = this.worldPosCallable.apply((world, blockPos) -> blockPos).orElse(BlockPos.ZERO);
-            blockState.removedByPlayer(this.player.world, pos, this.player, true, this.player.world.getFluidState(pos));
+            this.removed(this.player);
+            this.getTileEntity().setRemoved();
+            BlockPos pos = this.worldPosCallable.evaluate((world, blockPos) -> blockPos).orElse(BlockPos.ZERO);
+            blockState.removedByPlayer(this.player.level, pos, this.player, true, this.player.level.getFluidState(pos));
 
             this.placeStructure(direction, pattern.get(), pos);
         }
     }
 
     private void removeItemFromInventory(Item item, int amountToRemove) {
-        for(int i = 0; i < this.inventory.getSizeInventory() && amountToRemove > 0; i++) {
-            ItemStack currentStack = this.inventory.getStackInSlot(i);
+        for(int i = 0; i < this.inventory.getContainerSize() && amountToRemove > 0; i++) {
+            ItemStack currentStack = this.inventory.getItem(i);
             if(currentStack.getItem().equals(item)) {
                 if(amountToRemove >= currentStack.getCount()) {
                     amountToRemove -= currentStack.getCount();
-                    this.inventory.removeStackFromSlot(i);
+                    this.inventory.removeItemNoUpdate(i);
                 } else {
                     currentStack.setCount(currentStack.getCount() - amountToRemove);
                     amountToRemove = 0;
@@ -202,7 +202,7 @@ public class BlueprintBlockContainer extends Container {
     private void placeStructureNorthSouth(boolean isNorth, @Nonnull List<List<List<BlockState>>> pattern, BlockPos pos) {
         int sign = isNorth ? 1 : -1;
         for(int i = 0; i < pattern.size(); i++) {
-            BlockPos currentY = pos.up(i);
+            BlockPos currentY = pos.above(i);
             for(int j = 0; j < pattern.get(i).size(); j++) {
                 int posZ = sign*(pattern.get(i).size()/2-j);
                 BlockPos currentZY = currentY.north(posZ);
@@ -220,7 +220,7 @@ public class BlueprintBlockContainer extends Container {
     private void placeStructureWestEast(boolean isWest, @Nonnull List<List<List<BlockState>>> pattern, BlockPos pos) {
         int sign = isWest ? 1 : -1;
         for(int i = 0; i < pattern.size(); i++) {
-            BlockPos currentY = pos.up(i);
+            BlockPos currentY = pos.above(i);
             for(int j = 0; j < pattern.get(i).size(); j++) {
                 int posX = sign*(pattern.get(i).size()/2-j);
                 BlockPos currentXY = currentY.west(posX);
@@ -236,10 +236,10 @@ public class BlueprintBlockContainer extends Container {
     }
 
     private void placeBlock(BlockState state, BlockPos pos) {
-        this.player.world.getBlockState(pos).removedByPlayer(this.player.world, pos, this.player, true, this.player.world.getFluidState(pos));
-        this.player.world.setBlockState(pos, state, 11);
-        state.getBlock().onBlockPlacedBy(this.player.world, pos, state, this.player, ItemStack.EMPTY);
-        SoundType soundtype = state.getSoundType(this.player.world, pos, this.player);
-        this.player.world.playSound(this.player, pos, state.getSoundType(this.player.world, pos, this.player).getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+        this.player.level.getBlockState(pos).removedByPlayer(this.player.level, pos, this.player, true, this.player.level.getFluidState(pos));
+        this.player.level.setBlock(pos, state, 11);
+        state.getBlock().setPlacedBy(this.player.level, pos, state, this.player, ItemStack.EMPTY);
+        SoundType soundtype = state.getSoundType(this.player.level, pos, this.player);
+        this.player.level.playSound(this.player, pos, state.getSoundType(this.player.level, pos, this.player).getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
     }
 }

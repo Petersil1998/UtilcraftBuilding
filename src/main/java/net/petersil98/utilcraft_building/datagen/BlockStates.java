@@ -43,9 +43,9 @@ public class BlockStates extends BlockStateProvider {
         ModelFile pressed = models().singleTexture(BlockItemUtils.name(block)+"_pressed", mcLoc(ModelProvider.BLOCK_FOLDER+"/button_pressed"), location);
         models().singleTexture(BlockItemUtils.name(block)+"_inventory", mcLoc(ModelProvider.BLOCK_FOLDER+"/button_inventory"), location);
         getVariantBuilder(block).forAllStates(blockState -> {
-            Direction facing = blockState.get(AbstractButtonBlock.HORIZONTAL_FACING);
-            AttachFace face = blockState.get(AbstractButtonBlock.FACE);
-            boolean powered = blockState.get(AbstractButtonBlock.POWERED);
+            Direction facing = blockState.getValue(AbstractButtonBlock.FACING);
+            AttachFace face = blockState.getValue(AbstractButtonBlock.FACE);
+            boolean powered = blockState.getValue(AbstractButtonBlock.POWERED);
             int yRot = 0;
             int xRot = 0;
             boolean uvlock = false;
@@ -109,7 +109,7 @@ public class BlockStates extends BlockStateProvider {
         ModelFile pressurePlateUp = models().singleTexture(BlockItemUtils.name(block), mcLoc(ModelProvider.BLOCK_FOLDER+"/pressure_plate_up"), location);
         ModelFile pressurePlateDown = models().singleTexture(BlockItemUtils.name(block)+"_down", mcLoc(ModelProvider.BLOCK_FOLDER+"/pressure_plate_down"), location);
         getVariantBuilder(block).forAllStates(blockState -> ConfiguredModel.builder()
-                .modelFile(blockState.get(PressurePlateBlock.POWERED) ? pressurePlateDown : pressurePlateUp)
+                .modelFile(blockState.getValue(PressurePlateBlock.POWERED) ? pressurePlateDown : pressurePlateUp)
                 .build());
     }
 

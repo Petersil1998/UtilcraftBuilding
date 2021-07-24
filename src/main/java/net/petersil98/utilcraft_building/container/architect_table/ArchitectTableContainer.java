@@ -60,7 +60,7 @@ public class ArchitectTableContainer extends Container {
     private final Method onSwapCraft = ObfuscationReflectionHelper.findMethod(Slot.class, "func_190900_b", int.class);
 
     public ArchitectTableContainer(int id, PlayerInventory playerInventory) {
-        this(id, playerInventory, IWorldPosCallable.DUMMY);
+        this(id, playerInventory, IWorldPosCallable.NULL);
     }
 
     public ArchitectTableContainer(int id, @Nonnull PlayerInventory playerInventory, IWorldPosCallable worldPosCallable) {
@@ -78,7 +78,7 @@ public class ArchitectTableContainer extends Container {
             for(int j = 0; j < SIZE; ++j) {
                 this.addSlot(new Slot(this.currentInventory, j + i * SIZE, 26 + j * 18, i * 18 - 48) {
                     @Override
-                    public boolean isItemValid(@Nonnull ItemStack stack) {
+                    public boolean mayPlace(@Nonnull ItemStack stack) {
                         return stack.getItem() instanceof BlockItem && !getBlueprint().equals(ItemStack.EMPTY);
                     }
                 });
@@ -86,19 +86,19 @@ public class ArchitectTableContainer extends Container {
         }
         this.addSlot(new Slot(this.blueprintInventory, 0, 188, 207) {
             @Override
-            public boolean isItemValid(@Nonnull ItemStack stack) {
+            public boolean mayPlace(@Nonnull ItemStack stack) {
                 return stack.getItem() instanceof Blueprint;
             }
 
             @Nonnull
             @Override
             public ItemStack onTake(@Nonnull PlayerEntity player, @Nonnull ItemStack stack) {
-                if(!player.world.isRemote) {
+                if(!player.level.isClientSide) {
                     ItemStack result = updateBlueprintFromInventory(stack);
                     currentLayer = 0;
                     maxLayer = 0;
-                    currentInventory.clear();
-                    detectAndSendChanges();
+                    currentInventory.clearContent();
+                    broadcastChanges();
                     syncData();
                     syncCapabilities();
                     return result;
@@ -107,18 +107,18 @@ public class ArchitectTableContainer extends Container {
             }
 
             @Override
-            public void onSlotChanged() {
-                if(!playerEntity.world.isRemote) {
-                    if (this.getStack().getItem() instanceof Blueprint) {
+            public void setChanged() {
+                if(!playerEntity.level.isClientSide) {
+                    if (this.getItem().getItem() instanceof Blueprint) {
                         currentLayer = 0;
                         maxLayer = 0;
-                        currentInventory.clear();
-                        updateInventoryFromBlueprint(this.getStack());
-                        detectAndSendChanges();
+                        currentInventory.clearContent();
+                        updateInventoryFromBlueprint(this.getItem());
+                        broadcastChanges();
                         syncData();
                     }
                 }
-                super.onSlotChanged();
+                super.setChanged();
             }
         });
         for(int i = 0; i < 3; ++i) {
@@ -134,18 +134,18 @@ public class ArchitectTableContainer extends Container {
 
     @Nonnull
     @Override
-    public ItemStack slotClick(int slotId, int dragType, @Nonnull ClickType clickType, @Nonnull PlayerEntity player) {
+    public ItemStack clicked(int slotId, int dragType, @Nonnull ClickType clickType, @Nonnull PlayerEntity player) {
         try {
             return this.handleClick(slotId, dragType, clickType, player);
         } catch (Exception exception) {
-            CrashReport crashreport = CrashReport.makeCrashReport(exception, "Container click");
-            CrashReportCategory crashreportcategory = crashreport.makeCategory("Click info");
-            crashreportcategory.addDetail("Menu Type", () -> Registry.MENU.getKey(this.getType()).toString());
-            crashreportcategory.addDetail("Menu Class", () -> this.getClass().getCanonicalName());
-            crashreportcategory.addDetail("Slot Count", this.inventorySlots.size());
-            crashreportcategory.addDetail("Slot", slotId);
-            crashreportcategory.addDetail("Button", dragType);
-            crashreportcategory.addDetail("Type", clickType);
+            CrashReport crashreport = CrashReport.forThrowable(exception, "Container click");
+            CrashReportCategory crashreportcategory = crashreport.addCategory("Click info");
+            crashreportcategory.setDetail("Menu Type", () -> Registry.MENU.getKey(this.getType()).toString());
+            crashreportcategory.setDetail("Menu Class", () -> this.getClass().getCanonicalName());
+            crashreportcategory.setDetail("Slot Count", this.slots.size());
+            crashreportcategory.setDetail("Slot", slotId);
+            crashreportcategory.setDetail("Button", dragType);
+            crashreportcategory.setDetail("Type", clickType);
             throw new ReportedException(crashreport);
         }
     }
@@ -158,40 +158,40 @@ public class ArchitectTableContainer extends Container {
         PlayerInventory playerinventory = player.inventory;
         if (clickType == ClickType.QUICK_CRAFT) {
             int dragEvent = this.dragEvent;
-            this.dragEvent = getDragEvent(dragType);
+            this.dragEvent = getQuickcraftHeader(dragType);
             if ((dragEvent != 1 || this.dragEvent != 2) && dragEvent != this.dragEvent) {
-                this.resetDrag();
-            } else if (playerinventory.getItemStack().isEmpty()) {
-                this.resetDrag();
+                this.resetQuickCraft();
+            } else if (playerinventory.getCarried().isEmpty()) {
+                this.resetQuickCraft();
             } else if (this.dragEvent == 0) {
                 // Start Drag
-                this.dragMode = extractDragMode(dragType);
-                if (isValidDragMode(this.dragMode, player)) {
+                this.dragMode = getQuickcraftType(dragType);
+                if (isValidQuickcraftType(this.dragMode, player)) {
                     this.dragEvent = 1;
                     this.dragSlots.clear();
                 } else {
-                    this.resetDrag();
+                    this.resetQuickCraft();
                 }
             } else if (this.dragEvent == 1) {
                 // Add Slot
-                Slot slot = this.inventorySlots.get(slotId);
-                ItemStack clickedStack = playerinventory.getItemStack();
-                if (slot != null && canAddItemToSlot(slot, clickedStack, true) && slot.isItemValid(clickedStack) && (dragMode == 2 || clickedStack.getCount() > this.dragSlots.size()) && this.canDragIntoSlot(slot)) {
+                Slot slot = this.slots.get(slotId);
+                ItemStack clickedStack = playerinventory.getCarried();
+                if (slot != null && canItemQuickReplace(slot, clickedStack, true) && slot.mayPlace(clickedStack) && (dragMode == 2 || clickedStack.getCount() > this.dragSlots.size()) && this.canDragTo(slot)) {
                     this.dragSlots.add(slot);
                 }
             } else if (this.dragEvent == 2) {
                 //End Drag
                 if (!this.dragSlots.isEmpty()) {
-                    ItemStack stack = playerinventory.getItemStack().copy();
-                    int count = playerinventory.getItemStack().getCount();
+                    ItemStack stack = playerinventory.getCarried().copy();
+                    int count = playerinventory.getCarried().getCount();
                     for(Slot dragSlot : this.dragSlots) {
-                        ItemStack clickedStack = playerinventory.getItemStack();
-                        if (dragSlot != null && canAddItemToSlot(dragSlot, clickedStack, true) && dragSlot.isItemValid(clickedStack) && (this.dragMode == 2 || clickedStack.getCount() >= this.dragSlots.size()) && this.canDragIntoSlot(dragSlot)) {
+                        ItemStack clickedStack = playerinventory.getCarried();
+                        if (dragSlot != null && canItemQuickReplace(dragSlot, clickedStack, true) && dragSlot.mayPlace(clickedStack) && (this.dragMode == 2 || clickedStack.getCount() >= this.dragSlots.size()) && this.canDragTo(dragSlot)) {
                             ItemStack clickedStackCopyCopy = stack.copy();
-                            if(!(dragSlot.inventory instanceof BlueprintInventory)) {
-                                int toTransfer = dragSlot.getHasStack() ? dragSlot.getStack().getCount() : 0;
-                                computeStackSize(this.dragSlots, this.dragMode, clickedStackCopyCopy, toTransfer);
-                                int k3 = Math.min(clickedStackCopyCopy.getMaxStackSize(), dragSlot.getItemStackLimit(clickedStackCopyCopy));
+                            if(!(dragSlot.container instanceof BlueprintInventory)) {
+                                int toTransfer = dragSlot.hasItem() ? dragSlot.getItem().getCount() : 0;
+                                getQuickCraftSlotCount(this.dragSlots, this.dragMode, clickedStackCopyCopy, toTransfer);
+                                int k3 = Math.min(clickedStackCopyCopy.getMaxStackSize(), dragSlot.getMaxStackSize(clickedStackCopyCopy));
                                 if (clickedStackCopyCopy.getCount() > k3) {
                                     clickedStackCopyCopy.setCount(k3);
                                 }
@@ -199,28 +199,28 @@ public class ArchitectTableContainer extends Container {
                             } else {
                                 clickedStackCopyCopy.setCount(1);
                             }
-                            dragSlot.putStack(clickedStackCopyCopy);
+                            dragSlot.set(clickedStackCopyCopy);
                         }
                     }
                     stack.setCount(count);
-                    playerinventory.setItemStack(stack);
+                    playerinventory.setCarried(stack);
                 }
-                this.resetDrag();
+                this.resetQuickCraft();
             } else {
-                this.resetDrag();
+                this.resetQuickCraft();
             }
         } else if (this.dragEvent != 0) {
-            this.resetDrag();
+            this.resetQuickCraft();
         } else if ((clickType == ClickType.PICKUP || clickType == ClickType.QUICK_MOVE) && (dragType == 0 || dragType == 1)) {
             if (slotId == -999) {
-                if (!playerinventory.getItemStack().isEmpty()) {
+                if (!playerinventory.getCarried().isEmpty()) {
                     if (dragType == 0) {
-                        player.dropItem(playerinventory.getItemStack(), true);
-                        playerinventory.setItemStack(ItemStack.EMPTY);
+                        player.drop(playerinventory.getCarried(), true);
+                        playerinventory.setCarried(ItemStack.EMPTY);
                     }
 
                     if (dragType == 1) {
-                        player.dropItem(playerinventory.getItemStack().split(1), true);
+                        player.drop(playerinventory.getCarried().split(1), true);
                     }
                 }
             } else if (clickType == ClickType.QUICK_MOVE) {
@@ -228,12 +228,12 @@ public class ArchitectTableContainer extends Container {
                     return ItemStack.EMPTY;
                 }
 
-                Slot slot = this.inventorySlots.get(slotId);
-                if (slot == null || !slot.canTakeStack(player)) {
+                Slot slot = this.slots.get(slotId);
+                if (slot == null || !slot.mayPickup(player)) {
                     return ItemStack.EMPTY;
                 }
 
-                for(ItemStack transferredStack = this.transferStackInSlot(player, slotId); !transferredStack.isEmpty() && ItemStack.areItemsEqual(slot.getStack(), transferredStack); transferredStack = this.transferStackInSlot(player, slotId)) {
+                for(ItemStack transferredStack = this.quickMoveStack(player, slotId); !transferredStack.isEmpty() && ItemStack.isSame(slot.getItem(), transferredStack); transferredStack = this.quickMoveStack(player, slotId)) {
                     returnStack = transferredStack.copy();
                 }
             } else {
@@ -241,52 +241,52 @@ public class ArchitectTableContainer extends Container {
                     return ItemStack.EMPTY;
                 }
 
-                Slot slot = this.inventorySlots.get(slotId);
+                Slot slot = this.slots.get(slotId);
                 if (slot != null) {
-                    ItemStack stackInSlot = slot.getStack();
-                    ItemStack clickedStack = playerinventory.getItemStack();
+                    ItemStack stackInSlot = slot.getItem();
+                    ItemStack clickedStack = playerinventory.getCarried();
                     if (!stackInSlot.isEmpty()) {
                         returnStack = stackInSlot.copy();
                     }
 
                     if (stackInSlot.isEmpty()) {
-                        if (!clickedStack.isEmpty() && slot.isItemValid(clickedStack)) {
-                            if(!(slot.inventory instanceof BlueprintInventory)) {
+                        if (!clickedStack.isEmpty() && slot.mayPlace(clickedStack)) {
+                            if(!(slot.container instanceof BlueprintInventory)) {
                                 int amountToTransfer = dragType == 0 ? clickedStack.getCount() : 1;
-                                if (amountToTransfer > slot.getItemStackLimit(clickedStack)) {
-                                    amountToTransfer = slot.getItemStackLimit(clickedStack);
+                                if (amountToTransfer > slot.getMaxStackSize(clickedStack)) {
+                                    amountToTransfer = slot.getMaxStackSize(clickedStack);
                                 }
-                                slot.putStack(clickedStack.split(amountToTransfer));
+                                slot.set(clickedStack.split(amountToTransfer));
                             } else {
                                 ItemStack newStack = clickedStack.copy();
                                 newStack.setCount(1);
-                                slot.putStack(newStack);
+                                slot.set(newStack);
                             }
                         }
-                    } else if (slot.canTakeStack(player)) {
+                    } else if (slot.mayPickup(player)) {
                         if (clickedStack.isEmpty()) {
                             if (stackInSlot.isEmpty()) {
-                                slot.putStack(ItemStack.EMPTY);
-                                playerinventory.setItemStack(ItemStack.EMPTY);
+                                slot.set(ItemStack.EMPTY);
+                                playerinventory.setCarried(ItemStack.EMPTY);
                             } else {
                                 int amountToReduce = dragType == 0 ? stackInSlot.getCount() : (stackInSlot.getCount() + 1) / 2;
-                                ItemStack stack = slot.decrStackSize(amountToReduce);
-                                if(!(slot.inventory instanceof BlueprintInventory)) {
-                                    playerinventory.setItemStack(stack);
+                                ItemStack stack = slot.remove(amountToReduce);
+                                if(!(slot.container instanceof BlueprintInventory)) {
+                                    playerinventory.setCarried(stack);
                                 } else {
                                     returnStack = ItemStack.EMPTY;
                                 }
                                 if (stackInSlot.isEmpty()) {
-                                    slot.putStack(ItemStack.EMPTY);
+                                    slot.set(ItemStack.EMPTY);
                                 }
 
-                                slot.onTake(player, playerinventory.getItemStack());
+                                slot.onTake(player, playerinventory.getCarried());
                             }
-                        } else if (slot.isItemValid(clickedStack)) {
-                            if (areItemsAndTagsEqual(stackInSlot, clickedStack)) {
+                        } else if (slot.mayPlace(clickedStack)) {
+                            if (consideredTheSameItem(stackInSlot, clickedStack)) {
                                 int amountThatCanFit = dragType == 0 ? clickedStack.getCount() : 1;
-                                if (amountThatCanFit > slot.getItemStackLimit(clickedStack) - stackInSlot.getCount()) {
-                                    amountThatCanFit = slot.getItemStackLimit(clickedStack) - stackInSlot.getCount();
+                                if (amountThatCanFit > slot.getMaxStackSize(clickedStack) - stackInSlot.getCount()) {
+                                    amountThatCanFit = slot.getMaxStackSize(clickedStack) - stackInSlot.getCount();
                                 }
 
                                 if (amountThatCanFit > clickedStack.getMaxStackSize() - stackInSlot.getCount()) {
@@ -295,100 +295,100 @@ public class ArchitectTableContainer extends Container {
 
                                 clickedStack.shrink(amountThatCanFit);
                                 stackInSlot.grow(amountThatCanFit);
-                            } else if (clickedStack.getCount() <= slot.getItemStackLimit(clickedStack)) {
-                                slot.putStack(clickedStack);
-                                playerinventory.setItemStack(stackInSlot);
+                            } else if (clickedStack.getCount() <= slot.getMaxStackSize(clickedStack)) {
+                                slot.set(clickedStack);
+                                playerinventory.setCarried(stackInSlot);
                             }
-                        } else if (clickedStack.getMaxStackSize() > 1 && areItemsAndTagsEqual(stackInSlot, clickedStack) && !stackInSlot.isEmpty()) {
+                        } else if (clickedStack.getMaxStackSize() > 1 && consideredTheSameItem(stackInSlot, clickedStack) && !stackInSlot.isEmpty()) {
                             int i3 = stackInSlot.getCount();
                             if (i3 + clickedStack.getCount() <= clickedStack.getMaxStackSize()) {
                                 clickedStack.grow(i3);
-                                stackInSlot = slot.decrStackSize(i3);
+                                stackInSlot = slot.remove(i3);
                                 if (stackInSlot.isEmpty()) {
-                                    slot.putStack(ItemStack.EMPTY);
+                                    slot.set(ItemStack.EMPTY);
                                 }
 
-                                slot.onTake(player, playerinventory.getItemStack());
+                                slot.onTake(player, playerinventory.getCarried());
                             }
                         }
                     }
 
-                    slot.onSlotChanged();
+                    slot.setChanged();
                 }
             }
         } else if (clickType == ClickType.SWAP) {
-            Slot slot = this.inventorySlots.get(slotId);
-            ItemStack selectedItem = playerinventory.getStackInSlot(dragType);
-            ItemStack stackInSlot = slot.getStack();
+            Slot slot = this.slots.get(slotId);
+            ItemStack selectedItem = playerinventory.getItem(dragType);
+            ItemStack stackInSlot = slot.getItem();
             if (!selectedItem.isEmpty() || !stackInSlot.isEmpty()) {
                 if (selectedItem.isEmpty()) {
-                    if (slot.canTakeStack(player)) {
-                        playerinventory.setInventorySlotContents(dragType, stackInSlot);
+                    if (slot.mayPickup(player)) {
+                        playerinventory.setItem(dragType, stackInSlot);
                         try {
                             onSwapCraft.invoke(slot, stackInSlot.getCount());
                         } catch (IllegalAccessException | InvocationTargetException e) {
                             e.printStackTrace();
                         }
-                        slot.putStack(ItemStack.EMPTY);
+                        slot.set(ItemStack.EMPTY);
                         slot.onTake(player, stackInSlot);
                     }
                 } else if (stackInSlot.isEmpty()) {
-                    if (slot.isItemValid(selectedItem)) {
-                        int limit = slot.getItemStackLimit(selectedItem);
+                    if (slot.mayPlace(selectedItem)) {
+                        int limit = slot.getMaxStackSize(selectedItem);
                         if (selectedItem.getCount() > limit) {
-                            slot.putStack(selectedItem.split(limit));
+                            slot.set(selectedItem.split(limit));
                         } else {
-                            slot.putStack(selectedItem);
-                            playerinventory.setInventorySlotContents(dragType, ItemStack.EMPTY);
+                            slot.set(selectedItem);
+                            playerinventory.setItem(dragType, ItemStack.EMPTY);
                         }
                     }
-                } else if (slot.canTakeStack(player) && slot.isItemValid(selectedItem)) {
-                    int limit = slot.getItemStackLimit(selectedItem);
+                } else if (slot.mayPickup(player) && slot.mayPlace(selectedItem)) {
+                    int limit = slot.getMaxStackSize(selectedItem);
                     if (selectedItem.getCount() > limit) {
-                        slot.putStack(selectedItem.split(limit));
+                        slot.set(selectedItem.split(limit));
                         slot.onTake(player, stackInSlot);
-                        if (!playerinventory.addItemStackToInventory(stackInSlot)) {
-                            player.dropItem(stackInSlot, true);
+                        if (!playerinventory.add(stackInSlot)) {
+                            player.drop(stackInSlot, true);
                         }
                     } else {
-                        slot.putStack(selectedItem);
-                        playerinventory.setInventorySlotContents(dragType, stackInSlot);
+                        slot.set(selectedItem);
+                        playerinventory.setItem(dragType, stackInSlot);
                         slot.onTake(player, stackInSlot);
                     }
                 }
             }
-        } else if (clickType == ClickType.CLONE && player.abilities.isCreativeMode && playerinventory.getItemStack().isEmpty() && slotId >= 0) {
-            Slot inventorySlot = this.inventorySlots.get(slotId);
-            if (inventorySlot != null && inventorySlot.getHasStack()) {
-                ItemStack slotStackCopy = inventorySlot.getStack().copy();
+        } else if (clickType == ClickType.CLONE && player.abilities.instabuild && playerinventory.getCarried().isEmpty() && slotId >= 0) {
+            Slot inventorySlot = this.slots.get(slotId);
+            if (inventorySlot != null && inventorySlot.hasItem()) {
+                ItemStack slotStackCopy = inventorySlot.getItem().copy();
                 slotStackCopy.setCount(slotStackCopy.getMaxStackSize());
-                playerinventory.setItemStack(slotStackCopy);
+                playerinventory.setCarried(slotStackCopy);
             }
-        } else if (clickType == ClickType.THROW && playerinventory.getItemStack().isEmpty() && slotId >= 0) {
-            Slot inventorySlot = this.inventorySlots.get(slotId);
-            if (inventorySlot != null && inventorySlot.getHasStack() && inventorySlot.canTakeStack(player)) {
-                ItemStack decreasedStack = inventorySlot.decrStackSize(dragType == 0 ? 1 : inventorySlot.getStack().getCount());
+        } else if (clickType == ClickType.THROW && playerinventory.getCarried().isEmpty() && slotId >= 0) {
+            Slot inventorySlot = this.slots.get(slotId);
+            if (inventorySlot != null && inventorySlot.hasItem() && inventorySlot.mayPickup(player)) {
+                ItemStack decreasedStack = inventorySlot.remove(dragType == 0 ? 1 : inventorySlot.getItem().getCount());
                 inventorySlot.onTake(player, decreasedStack);
-                player.dropItem(decreasedStack, true);
+                player.drop(decreasedStack, true);
             }
         } else if (clickType == ClickType.PICKUP_ALL && slotId >= 0) {
-            Slot inventorySlot = this.inventorySlots.get(slotId);
-            ItemStack clickedStack = playerinventory.getItemStack();
-            if (!clickedStack.isEmpty() && (inventorySlot == null || !inventorySlot.getHasStack() || !inventorySlot.canTakeStack(player))) {
-                int j1 = dragType == 0 ? 0 : this.inventorySlots.size() - 1;
+            Slot inventorySlot = this.slots.get(slotId);
+            ItemStack clickedStack = playerinventory.getCarried();
+            if (!clickedStack.isEmpty() && (inventorySlot == null || !inventorySlot.hasItem() || !inventorySlot.mayPickup(player))) {
+                int j1 = dragType == 0 ? 0 : this.slots.size() - 1;
                 int sign = dragType == 0 ? 1 : -1;
 
                 for(int j = 0; j < 2; ++j) {
-                    for(int k = j1; k >= 0 && k < this.inventorySlots.size() && clickedStack.getCount() < clickedStack.getMaxStackSize(); k += sign) {
-                        Slot currentSlot = this.inventorySlots.get(k);
-                        if (currentSlot.getHasStack() && canAddItemToSlot(currentSlot, clickedStack, true) && currentSlot.canTakeStack(player) && this.canMergeSlot(clickedStack, currentSlot)) {
-                            ItemStack currentStack = currentSlot.getStack();
+                    for(int k = j1; k >= 0 && k < this.slots.size() && clickedStack.getCount() < clickedStack.getMaxStackSize(); k += sign) {
+                        Slot currentSlot = this.slots.get(k);
+                        if (currentSlot.hasItem() && canItemQuickReplace(currentSlot, clickedStack, true) && currentSlot.mayPickup(player) && this.canTakeItemForPickAll(clickedStack, currentSlot)) {
+                            ItemStack currentStack = currentSlot.getItem();
                             if (j != 0 || currentStack.getCount() != currentStack.getMaxStackSize()) {
                                 int min = Math.min(clickedStack.getMaxStackSize() - clickedStack.getCount(), currentStack.getCount());
-                                ItemStack decreasedStack = currentSlot.decrStackSize(min);
+                                ItemStack decreasedStack = currentSlot.remove(min);
                                 clickedStack.grow(min);
                                 if (decreasedStack.isEmpty()) {
-                                    currentSlot.putStack(ItemStack.EMPTY);
+                                    currentSlot.set(ItemStack.EMPTY);
                                 }
 
                                 currentSlot.onTake(player, decreasedStack);
@@ -397,7 +397,7 @@ public class ArchitectTableContainer extends Container {
                     }
                 }
             }
-            this.detectAndSendChanges();
+            this.broadcastChanges();
         }
         return returnStack;
     }
@@ -405,32 +405,32 @@ public class ArchitectTableContainer extends Container {
     /**
      * Determines whether supplied player can use this container
      */
-    public boolean canInteractWith(@Nonnull PlayerEntity player) {
-        return isWithinUsableDistance(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE);
+    public boolean stillValid(@Nonnull PlayerEntity player) {
+        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE);
     }
 
     public void nextLayer() {
-        if (this.hasNextLayer() && !playerEntity.world.isRemote) {
+        if (this.hasNextLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
             stack = this.updateBlueprintFromInventory(stack);
             this.currentLayer++;
             this.updateInventoryFromBlueprint(stack);
-            this.blueprintInventory.setInventorySlotContents(0, stack);
-            this.detectAndSendChanges();
+            this.blueprintInventory.setItem(0, stack);
+            this.broadcastChanges();
             this.syncData();
         }
     }
 
     public void previousLayer() {
-        if(this.hasPreviousLayer() && !playerEntity.world.isRemote) {
+        if(this.hasPreviousLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
             stack = this.updateBlueprintFromInventory(stack);
             if(hasPreviousLayer()) {
                 this.currentLayer--;
             }
             this.updateInventoryFromBlueprint(stack);
-            this.blueprintInventory.setInventorySlotContents(0, stack);
-            this.detectAndSendChanges();
+            this.blueprintInventory.setItem(0, stack);
+            this.broadcastChanges();
             this.syncData();
         }
     }
@@ -452,26 +452,26 @@ public class ArchitectTableContainer extends Container {
     }
 
     public void addLayer() {
-        if(!playerEntity.world.isRemote) {
+        if(!playerEntity.level.isClientSide) {
             this.maxLayer++;
             this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
                 List<List<BlockState>> emptyList = new ArrayList<>();
                 for (int i = 0; i < SIZE; i++) {
                     List<BlockState> blockStates = new ArrayList<>();
                     for (int j = 0; j < SIZE; j++) {
-                        blockStates.add(Blocks.AIR.getDefaultState());
+                        blockStates.add(Blocks.AIR.defaultBlockState());
                     }
                     emptyList.add(blockStates);
                 }
                 iBluePrint.getPattern().add(emptyList);
             });
-            this.detectAndSendChanges();
+            this.broadcastChanges();
             this.syncData();
         }
     }
 
     public void removeCurrentLayer() {
-        if(!playerEntity.world.isRemote) {
+        if(!playerEntity.level.isClientSide) {
             AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
             this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
             List<List<List<BlockState>>> pattern = patternReference.get();
@@ -479,14 +479,14 @@ public class ArchitectTableContainer extends Container {
             this.maxLayer--;
             this.currentLayer--;
             this.updateInventoryFromBlueprint(this.getBlueprint());
-            this.detectAndSendChanges();
+            this.broadcastChanges();
             this.syncData();
         }
     }
 
     @Nonnull
     private ItemStack getBlueprint() {
-        return this.blueprintInventory.getStackInSlot(0);
+        return this.blueprintInventory.getItem(0);
     }
 
     public boolean containsBlueprint() {
@@ -504,13 +504,13 @@ public class ArchitectTableContainer extends Container {
                 for (int k = 0; k < lists.get(j).size(); k++) {
                     BlockState state = lists.get(j).get(k);
                     if (state.getBlock() instanceof AirBlock) {
-                        currentInventory.setInventorySlotContents(j * SIZE + k, ItemStack.EMPTY);
+                        currentInventory.setItem(j * SIZE + k, ItemStack.EMPTY);
                     } else {
                         ItemStack itemStack = state.getPickBlock(new BlockRayTraceResult(Vector3d.ZERO, Direction.DOWN, BlockPos.ZERO, false),
-                                worldPosCallable.apply((world, blockPos) -> world).orElse(null),
-                                worldPosCallable.apply((world, blockPos) -> blockPos).orElse(null),
+                                worldPosCallable.evaluate((world, blockPos) -> world).orElse(null),
+                                worldPosCallable.evaluate((world, blockPos) -> blockPos).orElse(null),
                                 playerEntity);
-                        currentInventory.setInventorySlotContents(j * SIZE + k, itemStack);
+                        currentInventory.setItem(j * SIZE + k, itemStack);
                     }
                 }
             }
@@ -533,11 +533,11 @@ public class ArchitectTableContainer extends Container {
         for (int j = 0; j < SIZE; j++) {
             List<BlockState> blockStates = new ArrayList<>();
             for (int k = 0; k < SIZE; k++) {
-                Item item = currentInventory.getStackInSlot(j * SIZE + k).getItem();
+                Item item = currentInventory.getItem(j * SIZE + k).getItem();
                 if(item instanceof AirItem) {
-                    blockStates.add(Blocks.AIR.getDefaultState());
+                    blockStates.add(Blocks.AIR.defaultBlockState());
                 } else if(item instanceof BlockItem) {
-                    blockStates.add(((BlockItem)item).getBlock().getDefaultState());
+                    blockStates.add(((BlockItem)item).getBlock().defaultBlockState());
                 }
             }
             list.add(blockStates);
@@ -551,16 +551,16 @@ public class ArchitectTableContainer extends Container {
      * inventory and the other inventory(s).
      */
     @Nonnull
-    public ItemStack transferStackInSlot(@Nonnull PlayerEntity player, int index) {
+    public ItemStack quickMoveStack(@Nonnull PlayerEntity player, int index) {
         return ItemStack.EMPTY;
     }
 
     /**
      * Called when the container is closed.
      */
-    public void onContainerClosed(@Nonnull PlayerEntity player) {
-        super.onContainerClosed(player);
-        this.worldPosCallable.consume((p_217068_2_, p_217068_3_) -> this.clearContainer(player, p_217068_2_, this.blueprintInventory));
+    public void removed(@Nonnull PlayerEntity player) {
+        super.removed(player);
+        this.worldPosCallable.execute((p_217068_2_, p_217068_3_) -> this.clearContainer(player, p_217068_2_, this.blueprintInventory));
     }
 
     public void setCurrentLayer(int currentLayer) {
@@ -579,7 +579,7 @@ public class ArchitectTableContainer extends Container {
         PacketHandler.sendToClient(new SyncBlueprintItemCapability(this.getBlueprint()), (ServerPlayerEntity) this.playerEntity);
     }
 
-    protected void resetDrag() {
+    protected void resetQuickCraft() {
         this.dragEvent = 0;
         this.dragSlots.clear();
     }

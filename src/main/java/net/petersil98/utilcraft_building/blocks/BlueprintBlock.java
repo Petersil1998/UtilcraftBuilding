@@ -29,15 +29,15 @@ import javax.annotation.Nullable;
 
 public class BlueprintBlock extends Block {
 
-    public static final DirectionProperty FACING = HorizontalBlock.HORIZONTAL_FACING;
+    public static final DirectionProperty FACING = HorizontalBlock.FACING;
 
     public BlueprintBlock() {
         super(AbstractBlock.Properties
-                .create(Material.ROCK)
-                .setRequiresTool()
-                .hardnessAndResistance(3.5F)
+                .of(Material.STONE)
+                .requiresCorrectToolForDrops()
+                .strength(3.5F)
                 .noDrops()
-                .doesNotBlockMovement()
+                .noCollission()
         );
     }
 
@@ -54,29 +54,29 @@ public class BlueprintBlock extends Block {
 
     @Override
     public BlockState getStateForPlacement(@Nonnull BlockItemUseContext context) {
-        return this.getDefaultState().with(FACING, context.getPlacementHorizontalFacing());
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection());
     }
 
     @Override
-    protected void fillStateContainer(@Nonnull StateContainer.Builder<Block, BlockState> builder) {
+    protected void createBlockStateDefinition(@Nonnull StateContainer.Builder<Block, BlockState> builder) {
         builder.add(FACING);
     }
 
     @Nonnull
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResultType onBlockActivated(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull PlayerEntity player, @Nonnull Hand hand, @Nonnull BlockRayTraceResult hit) {
-        if (world.isRemote) {
+    public ActionResultType use(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull PlayerEntity player, @Nonnull Hand hand, @Nonnull BlockRayTraceResult hit) {
+        if (world.isClientSide) {
             return ActionResultType.SUCCESS;
         } else {
-            NetworkHooks.openGui((ServerPlayerEntity) player, state.getContainer(world,pos), pos);
+            NetworkHooks.openGui((ServerPlayerEntity) player, state.getMenuProvider(world,pos), pos);
             return ActionResultType.CONSUME;
         }
     }
 
     @Nullable
     @SuppressWarnings("deprecation")
-    public INamedContainerProvider getContainer(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
-        return new SimpleNamedContainerProvider((id, inventory, player) -> new BlueprintBlockContainer(id, inventory, IWorldPosCallable.of(world, pos)), getTranslatedName());
+    public INamedContainerProvider getMenuProvider(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
+        return new SimpleNamedContainerProvider((id, inventory, player) -> new BlueprintBlockContainer(id, inventory, IWorldPosCallable.create(world, pos)), getName());
     }
 }

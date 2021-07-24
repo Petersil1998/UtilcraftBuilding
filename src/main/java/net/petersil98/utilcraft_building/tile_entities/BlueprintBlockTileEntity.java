@@ -34,8 +34,8 @@ public class BlueprintBlockTileEntity extends TileEntity {
 
     @Nonnull
     @Override
-    public CompoundNBT write(@Nonnull CompoundNBT compound) {
-        super.write(compound);
+    public CompoundNBT save(@Nonnull CompoundNBT compound) {
+        super.save(compound);
         if (CapabilityBlueprint.BLUEPRINT_CAPABILITY != null) {
             compound.merge((CompoundNBT) CapabilityBlueprint.BLUEPRINT_CAPABILITY.writeNBT(blueprint, null));
         }
@@ -43,8 +43,8 @@ public class BlueprintBlockTileEntity extends TileEntity {
     }
 
     @Override
-    public void read(@Nonnull BlockState state, @Nonnull CompoundNBT nbt) {
-        super.read(state, nbt);
+    public void load(@Nonnull BlockState state, @Nonnull CompoundNBT nbt) {
+        super.load(state, nbt);
         if (CapabilityBlueprint.BLUEPRINT_CAPABILITY != null) {
             CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(this.blueprint, null, nbt);
         }

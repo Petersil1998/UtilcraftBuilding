@@ -26,13 +26,13 @@ public class SyncBlueprintItemCapability {
     }
 
     public SyncBlueprintItemCapability(@Nonnull PacketBuffer packetBuffer) {
-        this.data = packetBuffer.readCompoundTag();
-        this.itemStack = packetBuffer.readItemStack();
+        this.data = packetBuffer.readNbt();
+        this.itemStack = packetBuffer.readItem();
     }
 
     public void encode(@Nonnull PacketBuffer buf) {
-        buf.writeCompoundTag((CompoundNBT) this.data);
-        buf.writeItemStack(this.itemStack);
+        buf.writeNbt((CompoundNBT) this.data);
+        buf.writeItem(this.itemStack);
     }
 
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {

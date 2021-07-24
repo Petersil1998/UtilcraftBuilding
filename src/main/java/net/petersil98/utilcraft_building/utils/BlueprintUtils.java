@@ -68,7 +68,7 @@ public class BlueprintUtils {
     public static Map<Item, Integer> listBlockItemsFromSlots(@Nonnull List<Slot> slots) {
         Map<Item, Integer> blocks = new HashMap<>();
         for (Slot slot: slots) {
-            ItemStack current = slot.getStack();
+            ItemStack current = slot.getItem();
             if (!current.equals(ItemStack.EMPTY)) {
                 if(blocks.containsKey(current.getItem())) {
                     blocks.put(current.getItem(), blocks.get(current.getItem()) + current.getCount());
@@ -83,8 +83,8 @@ public class BlueprintUtils {
     @Nonnull
     public static Map<Item, Integer> listBlockItemsFromInventory(@Nonnull Inventory inventory) {
         Map<Item, Integer> blocks = new HashMap<>();
-        for(int i = 0; i < inventory.getSizeInventory(); i++) {
-            ItemStack current = inventory.getStackInSlot(i);
+        for(int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack current = inventory.getItem(i);
             if (!current.equals(ItemStack.EMPTY)) {
                 if(blocks.containsKey(current.getItem())) {
                     blocks.put(current.getItem(), blocks.get(current.getItem()) + current.getCount());

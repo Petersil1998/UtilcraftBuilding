@@ -29,13 +29,13 @@ public class BlueprintBlockScreen extends ContainerScreen<BlueprintBlockContaine
 
     public BlueprintBlockScreen(BlueprintBlockContainer container, PlayerInventory playerInventory, ITextComponent title) {
         super(container, playerInventory, title);
-        this.playerInventoryTitleY = this.ySize - 92;
+        this.inventoryLabelY = this.imageHeight - 92;
     }
 
     @Override
     protected void init() {
         super.init();
-        this.constructButton = new ImageButton(this.guiLeft + 45, this.height/2 + 80, 20, 18, 0, 0, 0, BUTTON_TEXTURE, button -> constructStructure());
+        this.constructButton = new ImageButton(this.leftPos + 45, this.height/2 + 80, 20, 18, 0, 0, 0, BUTTON_TEXTURE, button -> constructStructure());
     }
 
     @Override
@@ -49,21 +49,21 @@ public class BlueprintBlockScreen extends ContainerScreen<BlueprintBlockContaine
     public void render(@Nonnull MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks) {
         this.renderBackground(matrixStack);
         super.render(matrixStack, mouseX, mouseY, partialTicks);
-        this.renderHoveredTooltip(matrixStack, mouseX, mouseY);
+        this.renderTooltip(matrixStack, mouseX, mouseY);
     }
 
-    protected void drawGuiContainerBackgroundLayer(@Nonnull MatrixStack matrixStack, float partialTicks, int x, int y) {
+    protected void renderBg(@Nonnull MatrixStack matrixStack, float partialTicks, int x, int y) {
         RenderSystem.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-        this.minecraft.getTextureManager().bindTexture(INVENTORY_GUI_TEXTURE);
-        int i = (this.width - this.xSize) / 2;
-        int j = (this.height - this.ySize) / 2;
-        this.blit(matrixStack, i, j, 0, 0, this.xSize, this.ySize);
-        this.blit(matrixStack, i, j ,0, 0, this.xSize, this.ySize);
+        this.minecraft.getTextureManager().bind(INVENTORY_GUI_TEXTURE);
+        int i = (this.width - this.imageWidth) / 2;
+        int j = (this.height - this.imageHeight) / 2;
+        this.blit(matrixStack, i, j, 0, 0, this.imageWidth, this.imageHeight);
+        this.blit(matrixStack, i, j ,0, 0, this.imageWidth, this.imageHeight);
     }
 
     @Override
-    protected void drawGuiContainerForegroundLayer(@Nonnull MatrixStack matrixStack, int x, int y) {
-        super.drawGuiContainerForegroundLayer(matrixStack, x, y);
+    protected void renderLabels(@Nonnull MatrixStack matrixStack, int x, int y) {
+        super.renderLabels(matrixStack, x, y);
 
         this.addButton(this.constructButton);
     }
@@ -74,8 +74,8 @@ public class BlueprintBlockScreen extends ContainerScreen<BlueprintBlockContaine
     }
 
     private void updateButtons() {
-        Map<Block, Integer> required = BlueprintUtils.fromBlockStateToBlock(BlueprintUtils.listBlockStatesFromCapability(this.container.getTileEntity()));
-        Map<Item, Integer> supplied = BlueprintUtils.listBlockItemsFromInventory(this.container.getContainerInventory());
+        Map<Block, Integer> required = BlueprintUtils.fromBlockStateToBlock(BlueprintUtils.listBlockStatesFromCapability(this.menu.getTileEntity()));
+        Map<Item, Integer> supplied = BlueprintUtils.listBlockItemsFromInventory(this.menu.getContainerInventory());
         Map<Block, Integer> blocksSupplied = supplied.entrySet().stream().filter(e -> e.getKey() instanceof BlockItem).collect(Collectors.toMap((e -> ((BlockItem) e.getKey()).getBlock()), Map.Entry::getValue));
         boolean enabled = true;
         if(blocksSupplied.size() >= required.size()) {

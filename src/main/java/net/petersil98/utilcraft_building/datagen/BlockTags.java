@@ -12,6 +12,6 @@ public class BlockTags extends BlockTagsProvider {
     }
 
     @Override
-    protected void registerTags() {
+    protected void addTags() {
     }
 }

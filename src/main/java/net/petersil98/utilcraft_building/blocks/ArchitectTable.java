@@ -22,33 +22,33 @@ public class ArchitectTable extends Block {
 
     public ArchitectTable() {
         super(AbstractBlock.Properties
-                .create(Material.ROCK)
-                .setRequiresTool()
-                .hardnessAndResistance(3.5F)
-                .notSolid());
+                .of(Material.STONE)
+                .requiresCorrectToolForDrops()
+                .strength(3.5F)
+                .noOcclusion());
     }
 
     @Nonnull
     @Override
     @SuppressWarnings("deprecation")
-    public ActionResultType onBlockActivated(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull PlayerEntity player, @Nonnull Hand hand, @Nonnull BlockRayTraceResult hit) {
-        if (world.isRemote) {
+    public ActionResultType use(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos, @Nonnull PlayerEntity player, @Nonnull Hand hand, @Nonnull BlockRayTraceResult hit) {
+        if (world.isClientSide) {
             return ActionResultType.SUCCESS;
         } else {
-            player.openContainer(state.getContainer(world, pos));
+            player.openMenu(state.getMenuProvider(world, pos));
             return ActionResultType.CONSUME;
         }
     }
 
     @Override
     @SuppressWarnings("deprecation")
-    public boolean isTransparent(@Nonnull BlockState state) {
+    public boolean useShapeForLightOcclusion(@Nonnull BlockState state) {
         return true;
     }
 
     @Nullable
     @SuppressWarnings("deprecation")
-    public INamedContainerProvider getContainer(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
-        return new SimpleNamedContainerProvider((id, inventory, player) -> new ArchitectTableContainer(id, inventory, IWorldPosCallable.of(world, pos)), getTranslatedName());
+    public INamedContainerProvider getMenuProvider(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
+        return new SimpleNamedContainerProvider((id, inventory, player) -> new ArchitectTableContainer(id, inventory, IWorldPosCallable.create(world, pos)), getName());
     }
 }

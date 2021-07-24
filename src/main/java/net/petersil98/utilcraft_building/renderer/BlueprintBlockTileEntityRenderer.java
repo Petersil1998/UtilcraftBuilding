@@ -47,25 +47,25 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
     public BlueprintBlockTileEntityRenderer(TileEntityRendererDispatcher rendererDispatcher) {
         super(rendererDispatcher);
         this.minecraftInstance = Minecraft.getInstance();
-        this.shapes = this.minecraftInstance.getModelManager().getBlockModelShapes();
+        this.shapes = this.minecraftInstance.getModelManager().getBlockModelShaper();
         this.colors = this.minecraftInstance.getBlockColors();
     }
 
     public void render(@Nonnull BlueprintBlockTileEntity tileEntity, float partialTicks, @Nonnull MatrixStack matrixStack, @Nonnull IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay) {
-        World world = tileEntity.getWorld();
-        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.getDefaultState();
+        World world = tileEntity.getLevel();
+        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.defaultBlockState();
         Block block = blockstate.getBlock();
         if (block instanceof BlueprintBlock) {
-            matrixStack.push();
+            matrixStack.pushPose();
             renderRotatingCube(tileEntity, matrixStack, buffer);
-            matrixStack.pop();
+            matrixStack.popPose();
             renderLayoutBlocks(tileEntity, matrixStack, buffer, combinedLight, combinedOverlay);
         }
     }
 
     private void renderRotatingCube(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, @Nonnull IRenderTypeBuffer buffer) {
-        Random rnd = new Random(tileEntity.getPos().getX() * 337L + tileEntity.getPos().getY() * 37L + tileEntity.getPos().getZ() * 13L);
-        IVertexBuilder builder = buffer.getBuffer(RenderType.getTranslucent());
+        Random rnd = new Random(tileEntity.getBlockPos().getX() * 337L + tileEntity.getBlockPos().getY() * 37L + tileEntity.getBlockPos().getZ() * 13L);
+        IVertexBuilder builder = buffer.getBuffer(RenderType.translucent());
         IBakedModel model = this.minecraftInstance.getModelManager().getModel(CUBE_MODEL);
 
         long time = System.currentTimeMillis();
@@ -75,14 +75,14 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
         Quaternion rotation = new Vector3f(0f,1f,0).rotationDegrees(angle);
 
         matrixStack.translate(.5, .5, .5);
-        matrixStack.rotate(rotation);
+        matrixStack.mulPose(rotation);
         matrixStack.translate(-.5, -.5, -.5);
 
-        this.minecraftInstance.getBlockRendererDispatcher().getBlockModelRenderer().renderModel(this.minecraftInstance.world, model, tileEntity.getBlockState(), tileEntity.getPos(), matrixStack, builder, true, rnd, tileEntity.getBlockState().getPositionRandom(tileEntity.getPos()), OverlayTexture.NO_OVERLAY, EmptyModelData.INSTANCE);
+        this.minecraftInstance.getBlockRenderer().getModelRenderer().renderModel(this.minecraftInstance.level, model, tileEntity.getBlockState(), tileEntity.getBlockPos(), matrixStack, builder, true, rnd, tileEntity.getBlockState().getSeed(tileEntity.getBlockPos()), OverlayTexture.NO_OVERLAY, EmptyModelData.INSTANCE);
     }
 
     private void renderLayoutBlocks(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, IRenderTypeBuffer bufferType, int combinedLight, int combinedOverlay) {
-        Direction direction = tileEntity.getBlockState().get(BlueprintBlock.FACING);
+        Direction direction = tileEntity.getBlockState().getValue(BlueprintBlock.FACING);
         switch (direction) {
             case SOUTH: {
                 renderLayoutBlocksSouth(tileEntity, matrixStack, bufferType, combinedLight, combinedOverlay);
@@ -121,11 +121,11 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
 
     private void renderLayoutBlocksNorthSouth(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, IRenderTypeBuffer bufferType, int combinedLight, int combinedOverlay, boolean isNorth) {
         int sign = isNorth ? 1 : -1;
-        matrixStack.push();
+        matrixStack.pushPose();
         tileEntity.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
             List<List<List<BlockState>>> pattern = iBluePrint.getPattern();
             for(int i = 0; i < pattern.size(); i++) {
-                BlockPos currentY = tileEntity.getPos().up(i);
+                BlockPos currentY = tileEntity.getBlockPos().above(i);
                 matrixStack.translate( 0, 0, sign*(-pattern.get(i).size()/2));
                 for(int j = 0; j < pattern.get(i).size(); j++) {
                     int posZ = sign*(pattern.get(i).size()/2-j);
@@ -134,7 +134,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
                     for(int k = 0; k < pattern.get(i).get(j).size(); k++) {
                         int posX = sign*(pattern.get(i).get(j).size()/2-k);
                         BlockState state = pattern.get(i).get(j).get(k);
-                        if(!tileEntity.getWorld().getBlockState(currentXY.west(posX)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
+                        if(!tileEntity.getLevel().getBlockState(currentXY.west(posX)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
                             renderBlockWithTransparency(state, matrixStack, bufferType, combinedLight, combinedOverlay);
                         }
                         matrixStack.translate(sign,0,0);
@@ -145,16 +145,16 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
             }
             matrixStack.translate(0,-pattern.size(), 0);
         });
-        matrixStack.pop();
+        matrixStack.popPose();
     }
 
     private void renderLayoutBlocksWestEast(@Nonnull BlueprintBlockTileEntity tileEntity, @Nonnull MatrixStack matrixStack, IRenderTypeBuffer bufferType, int combinedLight, int combinedOverlay, boolean isWest) {
         int sign = isWest ? 1 : -1;
-        matrixStack.push();
+        matrixStack.pushPose();
         tileEntity.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
             List<List<List<BlockState>>> pattern = iBluePrint.getPattern();
             for(int i = 0; i < pattern.size(); i++) {
-                BlockPos currentY = tileEntity.getPos().up(i);
+                BlockPos currentY = tileEntity.getBlockPos().above(i);
                 matrixStack.translate( sign*(-pattern.get(i).size()/2), 0, 0);
                 for(int j = 0; j < pattern.get(i).size(); j++) {
                     int posX = sign*(pattern.get(i).size()/2-j);
@@ -163,7 +163,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
                     for(int k = 0; k < pattern.get(i).get(j).size(); k++) {
                         int posZ = sign*(pattern.get(i).get(j).size()/2-k);
                         BlockState state = pattern.get(i).get(j).get(k);
-                        if(!tileEntity.getWorld().getBlockState(currentXY.south(posZ)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
+                        if(!tileEntity.getLevel().getBlockState(currentXY.south(posZ)).getMaterial().isSolid() && !(state.getBlock() instanceof AirBlock)) {
                             renderBlockWithTransparency(state, matrixStack, bufferType, combinedLight, combinedOverlay);
                         }
                         matrixStack.translate(0,0,-sign);
@@ -174,25 +174,25 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
             }
             matrixStack.translate(0,-pattern.size(), 0);
         });
-        matrixStack.pop();
+        matrixStack.popPose();
     }
 
     private void renderBlockWithTransparency(@Nonnull BlockState blockState, MatrixStack matrixStack, IRenderTypeBuffer bufferType, int combinedLight, int combinedOverlay) {
-        BlockRenderType blockrendertype = blockState.getRenderType();
+        BlockRenderType blockrendertype = blockState.getRenderShape();
         if (blockrendertype != BlockRenderType.INVISIBLE) {
             switch(blockrendertype) {
                 case MODEL: {
-                    IBakedModel bakedModel = this.shapes.getModel(blockState);
+                    IBakedModel bakedModel = this.shapes.getBlockModel(blockState);
                     int color = this.colors.getColor(blockState, null, null, 0);
                     float red = (float) (color >> 16 & 255) / 255.0F;
                     float green = (float) (color >> 8 & 255) / 255.0F;
                     float blue = (float) (color & 255) / 255.0F;
-                    renderModel(matrixStack.getLast(), bufferType.getBuffer(RenderType.getTranslucent()), blockState, bakedModel, red, green, blue, combinedLight, combinedOverlay);
+                    renderModel(matrixStack.last(), bufferType.getBuffer(RenderType.translucent()), blockState, bakedModel, red, green, blue, combinedLight, combinedOverlay);
                     break;
                 }
                 case ENTITYBLOCK_ANIMATED: {
                     ItemStack stack = new ItemStack(blockState.getBlock());
-                    stack.getItem().getItemStackTileEntityRenderer().func_239207_a_(stack, ItemCameraTransforms.TransformType.NONE, matrixStack, bufferType, combinedLight, combinedOverlay);
+                    stack.getItem().getItemStackTileEntityRenderer().renderByItem(stack, ItemCameraTransforms.TransformType.NONE, matrixStack, bufferType, combinedLight, combinedOverlay);
                 }
             }
         }
@@ -215,7 +215,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
             float red;
             float green;
             float blue;
-            if (bakedquad.hasTintIndex()) {
+            if (bakedquad.isTinted()) {
                 red = MathHelper.clamp(r, 0.0F, 1.0F);
                 green = MathHelper.clamp(g, 0.0F, 1.0F);
                 blue = MathHelper.clamp(b, 0.0F, 1.0F);
@@ -225,16 +225,16 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
                 blue = 1.0F;
             }
 
-            int[] vertexData = bakedquad.getVertexData();
-            Vector3i vector3i = bakedquad.getFace().getDirectionVec();
+            int[] vertexData = bakedquad.getVertices();
+            Vector3i vector3i = bakedquad.getDirection().getNormal();
             Vector3f vector3f = new Vector3f((float)vector3i.getX(), (float)vector3i.getY(), (float)vector3i.getZ());
-            Matrix4f matrix4f = matrixEntry.getMatrix();
-            vector3f.transform(matrixEntry.getNormal());
+            Matrix4f matrix4f = matrixEntry.pose();
+            vector3f.transform(matrixEntry.normal());
             int size = 8;
             int j = vertexData.length / size;
 
             try (MemoryStack memorystack = MemoryStack.stackPush()) {
-                ByteBuffer bytebuffer = memorystack.malloc(DefaultVertexFormats.BLOCK.getSize());
+                ByteBuffer bytebuffer = memorystack.malloc(DefaultVertexFormats.BLOCK.getVertexSize());
                 IntBuffer intbuffer = bytebuffer.asIntBuffer();
                 int[] cLights = new int[]{combinedLight, combinedLight, combinedLight, combinedLight};
                 for(int k = 0; k < j; ++k) {
@@ -249,8 +249,8 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
                     float f10 = bytebuffer.getFloat(20);
                     Vector4f vector4f = new Vector4f(f, f1, f2, 1.0F);
                     vector4f.transform(matrix4f);
-                    this.applyBakedNormals(vector3f, bytebuffer, matrixEntry.getNormal());
-                    buffer.addVertex(vector4f.getX(), vector4f.getY(), vector4f.getZ(), red, green, blue, 0.85F, f9, f10, combinedOverlay, l, vector3f.getX(), vector3f.getY(), vector3f.getZ());
+                    this.applyBakedNormals(vector3f, bytebuffer, matrixEntry.normal());
+                    buffer.vertex(vector4f.x(), vector4f.y(), vector4f.z(), red, green, blue, 0.85F, f9, f10, combinedOverlay, l, vector3f.x(), vector3f.y(), vector3f.z());
                 }
             }
         }

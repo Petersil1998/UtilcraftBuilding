@@ -49,7 +49,7 @@ public class UtilcraftBuilding
 
         @Nonnull
         @Override
-        public ItemStack createIcon() {
+        public ItemStack makeIcon() {
             return new ItemStack(UtilcraftBuildingBlocks.ARCHITECT_TABLE);
         }
     };
@@ -68,9 +68,9 @@ public class UtilcraftBuilding
     }
 
     private void clientSetup(@Nonnull final FMLClientSetupEvent event) {
-        RenderTypeLookup.setRenderLayer(UtilcraftBuildingBlocks.ARCHITECT_TABLE, RenderType.getTranslucent());
-        ScreenManager.registerFactory(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, ArchitectTableScreen::new);
-        ScreenManager.registerFactory(UtilcraftBuildingContainer.BLUEPRINT_BLOCK_CONTAINER, BlueprintBlockScreen::new);
+        RenderTypeLookup.setRenderLayer(UtilcraftBuildingBlocks.ARCHITECT_TABLE, RenderType.translucent());
+        ScreenManager.register(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, ArchitectTableScreen::new);
+        ScreenManager.register(UtilcraftBuildingContainer.BLUEPRINT_BLOCK_CONTAINER, BlueprintBlockScreen::new);
         ClientRegistry.bindTileEntityRenderer(UtilcraftBuildingTileEntities.BLUEPRINT_BLOCK, BlueprintBlockTileEntityRenderer::new);
     }
 
@@ -88,14 +88,14 @@ public class UtilcraftBuilding
 
         @SubscribeEvent
         public static void registerItems(@Nonnull final RegistryEvent.Register<Item> itemRegistryEvent) {
-            itemRegistryEvent.getRegistry().register(new BlockItem(UtilcraftBuildingBlocks.ARCHITECT_TABLE, new Item.Properties().group(ITEM_GROUP)).setRegistryName("architect_table"));
+            itemRegistryEvent.getRegistry().register(new BlockItem(UtilcraftBuildingBlocks.ARCHITECT_TABLE, new Item.Properties().tab(ITEM_GROUP)).setRegistryName("architect_table"));
 
             itemRegistryEvent.getRegistry().register(new Blueprint().setRegistryName("blueprint"));
         }
 
         @SubscribeEvent
         public static void registerEntities(@Nonnull final RegistryEvent.Register<TileEntityType<?>> tileEntityRegister) {
-            tileEntityRegister.getRegistry().register(TileEntityType.Builder.create(BlueprintBlockTileEntity::new, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK).build(null).setRegistryName("blueprint_block"));
+            tileEntityRegister.getRegistry().register(TileEntityType.Builder.of(BlueprintBlockTileEntity::new, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK).build(null).setRegistryName("blueprint_block"));
         }
 
         @SubscribeEvent

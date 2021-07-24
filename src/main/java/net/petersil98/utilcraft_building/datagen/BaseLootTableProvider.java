@@ -55,120 +55,120 @@ public abstract class BaseLootTableProvider extends ForgeLootTableProvider {
     protected abstract void addTables();
 
     protected LootTable.Builder createSlabTable(Block block) {
-        LootPool.Builder builder = LootPool.builder()
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(ItemLootEntry.builder(block)
-                        .acceptFunction(ExplosionDecay.builder())
-                        .acceptFunction(SetCount.builder(new ConstantRange(2))
-                                .acceptCondition(BlockStateProperty.builder(block)
-                                        .fromProperties(StatePropertiesPredicate.Builder
-                                            .newBuilder()
-                                            .withProp(SlabBlock.TYPE, SlabType.DOUBLE))))
+                .setRolls(ConstantRange.exactly(1))
+                .add(ItemLootEntry.lootTableItem(block)
+                        .apply(ExplosionDecay.explosionDecay())
+                        .apply(SetCount.setCount(new ConstantRange(2))
+                                .when(BlockStateProperty.hasBlockStateProperties(block)
+                                        .setProperties(StatePropertiesPredicate.Builder
+                                            .properties()
+                                            .hasProperty(SlabBlock.TYPE, SlabType.DOUBLE))))
                 );
-        return LootTable.builder().addLootPool(builder);
+        return LootTable.lootTable().withPool(builder);
     }
 
     protected LootTable.Builder createDoorTable(Block block) {
-        LootPool.Builder builder = LootPool.builder()
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(ItemLootEntry.builder(block)
-                        .acceptCondition(BlockStateProperty.builder(block).
-                                fromProperties(StatePropertiesPredicate.Builder
-                                        .newBuilder()
-                                        .withProp(DoorBlock.HALF, DoubleBlockHalf.LOWER)
+                .setRolls(ConstantRange.exactly(1))
+                .add(ItemLootEntry.lootTableItem(block)
+                        .when(BlockStateProperty.hasBlockStateProperties(block).
+                                setProperties(StatePropertiesPredicate.Builder
+                                        .properties()
+                                        .hasProperty(DoorBlock.HALF, DoubleBlockHalf.LOWER)
                                 )
                         )
-                ).acceptCondition(SurvivesExplosion.builder());
-        return LootTable.builder().addLootPool(builder);
+                ).when(SurvivesExplosion.survivesExplosion());
+        return LootTable.lootTable().withPool(builder);
     }
 
     protected LootTable.Builder createOreTable(Block block, Item drop) {
-        LootPool.Builder builder = LootPool.builder()
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(ItemLootEntry.builder(block)
-                        .acceptCondition(MatchTool.builder(ItemPredicate.Builder.create().enchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1)))))
-                        .alternatively(ItemLootEntry.builder(drop)
-                                .acceptFunction(ApplyBonus.oreDrops(Enchantments.FORTUNE))
-                                .acceptFunction(ExplosionDecay.builder())
+                .setRolls(ConstantRange.exactly(1))
+                .add(ItemLootEntry.lootTableItem(block)
+                        .when(MatchTool.toolMatches(ItemPredicate.Builder.item().hasEnchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1)))))
+                        .otherwise(ItemLootEntry.lootTableItem(drop)
+                                .apply(ApplyBonus.addOreBonusCount(Enchantments.BLOCK_FORTUNE))
+                                .apply(ExplosionDecay.explosionDecay())
                         )
                 );
-        return LootTable.builder().addLootPool(builder);
+        return LootTable.lootTable().withPool(builder);
     }
 
     protected LootTable.Builder createLeaveTable(Block block, Block sapling, boolean dropSticks, boolean dropApples) {
-        LootTable.Builder table = LootTable.builder();
-        LootPool.Builder builder = LootPool.builder()
+        LootTable.Builder table = LootTable.lootTable();
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(AlternativesLootEntry.builder()
-                        .alternatively(ItemLootEntry.builder(block)
-                                    .acceptCondition(MatchTool.builder(ItemPredicate.Builder.create().item(Items.SHEARS))
-                                            .alternative(MatchTool.builder(ItemPredicate.Builder.create()
-                                                    .enchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1)))))))
-                        .alternatively(ItemLootEntry.builder(sapling)
-                                .acceptCondition(SurvivesExplosion.builder())
-                                .acceptCondition(TableBonus.builder(Enchantments.FORTUNE, 0.05f, 0.0625f, 0.083333336f, 0.1f))));
-        table.addLootPool(builder);
+                .setRolls(ConstantRange.exactly(1))
+                .add(AlternativesLootEntry.alternatives()
+                        .otherwise(ItemLootEntry.lootTableItem(block)
+                                    .when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(Items.SHEARS))
+                                            .or(MatchTool.toolMatches(ItemPredicate.Builder.item()
+                                                    .hasEnchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1)))))))
+                        .otherwise(ItemLootEntry.lootTableItem(sapling)
+                                .when(SurvivesExplosion.survivesExplosion())
+                                .when(TableBonus.bonusLevelFlatChance(Enchantments.BLOCK_FORTUNE, 0.05f, 0.0625f, 0.083333336f, 0.1f))));
+        table.withPool(builder);
 
         if(dropSticks) {
-            LootPool.Builder builder2 = LootPool.builder()
+            LootPool.Builder builder2 = LootPool.lootPool()
                     .name(BlockItemUtils.name(block))
-                    .rolls(ConstantRange.of(1))
-                    .addEntry(ItemLootEntry.builder(Items.STICK)
-                            .acceptCondition(TableBonus.builder(Enchantments.FORTUNE, 0.02f, 0.022222223f, 0.025f, 0.033333335f, 0.1f))
-                            .acceptFunction(SetCount.builder(RandomValueRange.of(1.0f, 2.0f)))
-                            .acceptFunction(ExplosionDecay.builder()))
-                    .acceptCondition(MatchTool.builder(ItemPredicate.Builder.create().item(Items.SHEARS))
-                            .alternative(MatchTool.builder(ItemPredicate.Builder.create()
-                                    .enchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1))))).inverted());
-            table.addLootPool(builder2);
+                    .setRolls(ConstantRange.exactly(1))
+                    .add(ItemLootEntry.lootTableItem(Items.STICK)
+                            .when(TableBonus.bonusLevelFlatChance(Enchantments.BLOCK_FORTUNE, 0.02f, 0.022222223f, 0.025f, 0.033333335f, 0.1f))
+                            .apply(SetCount.setCount(RandomValueRange.between(1.0f, 2.0f)))
+                            .apply(ExplosionDecay.explosionDecay()))
+                    .when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(Items.SHEARS))
+                            .or(MatchTool.toolMatches(ItemPredicate.Builder.item()
+                                    .hasEnchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1))))).invert());
+            table.withPool(builder2);
         }
 
         if(dropApples) {
-            LootPool.Builder builder3 = LootPool.builder()
+            LootPool.Builder builder3 = LootPool.lootPool()
                     .name(BlockItemUtils.name(block))
-                    .rolls(ConstantRange.of(1))
-                    .addEntry(ItemLootEntry.builder(Items.APPLE)
-                            .acceptCondition(TableBonus.builder(Enchantments.FORTUNE, 0.005f, 0.0055555557f, 0.00625f, 0.008333334f, 0.025f))
-                            .acceptCondition(SurvivesExplosion.builder()))
-                    .acceptCondition(MatchTool.builder(ItemPredicate.Builder.create().item(Items.SHEARS))
-                            .alternative(MatchTool.builder(ItemPredicate.Builder.create()
-                                    .enchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1))))).inverted());
-            table.addLootPool(builder3);
+                    .setRolls(ConstantRange.exactly(1))
+                    .add(ItemLootEntry.lootTableItem(Items.APPLE)
+                            .when(TableBonus.bonusLevelFlatChance(Enchantments.BLOCK_FORTUNE, 0.005f, 0.0055555557f, 0.00625f, 0.008333334f, 0.025f))
+                            .when(SurvivesExplosion.survivesExplosion()))
+                    .when(MatchTool.toolMatches(ItemPredicate.Builder.item().of(Items.SHEARS))
+                            .or(MatchTool.toolMatches(ItemPredicate.Builder.item()
+                                    .hasEnchantment(new EnchantmentPredicate(Enchantments.SILK_TOUCH, MinMaxBounds.IntBound.atLeast(1))))).invert());
+            table.withPool(builder3);
         }
 
         return table;
     }
 
     protected LootTable.Builder createSimpleTable(Block block) {
-        LootPool.Builder builder = LootPool.builder()
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(ItemLootEntry.builder(block))
-                .acceptCondition(SurvivesExplosion.builder());
-        return LootTable.builder().addLootPool(builder);
+                .setRolls(ConstantRange.exactly(1))
+                .add(ItemLootEntry.lootTableItem(block))
+                .when(SurvivesExplosion.survivesExplosion());
+        return LootTable.lootTable().withPool(builder);
     }
 
     protected LootTable.Builder createSimpleTableWithName(Block block) {
-        LootPool.Builder builder = LootPool.builder()
+        LootPool.Builder builder = LootPool.lootPool()
                 .name(BlockItemUtils.name(block))
-                .rolls(ConstantRange.of(1))
-                .addEntry(ItemLootEntry.builder(block)
-                        .acceptFunction(CopyName.builder(CopyName.Source.BLOCK_ENTITY)))
-                .acceptCondition(SurvivesExplosion.builder());
-        return LootTable.builder().addLootPool(builder);
+                .setRolls(ConstantRange.exactly(1))
+                .add(ItemLootEntry.lootTableItem(block)
+                        .apply(CopyName.copyName(CopyName.Source.BLOCK_ENTITY)))
+                .when(SurvivesExplosion.survivesExplosion());
+        return LootTable.lootTable().withPool(builder);
     }
 
     @Override
-    public void act(@Nonnull DirectoryCache cache) {
+    public void run(@Nonnull DirectoryCache cache) {
         addTables();
 
         Map<ResourceLocation, LootTable> tables = new HashMap<>();
         for (Map.Entry<Block, LootTable.Builder> entry : lootTables.entrySet()) {
-            tables.put(entry.getKey().getLootTable(), entry.getValue().setParameterSet(LootParameterSets.BLOCK).build());
+            tables.put(entry.getKey().getLootTable(), entry.getValue().setParamSet(LootParameterSets.BLOCK).build());
         }
         writeTables(cache, tables);
     }
@@ -178,7 +178,7 @@ public abstract class BaseLootTableProvider extends ForgeLootTableProvider {
         tables.forEach((key, lootTable) -> {
             Path path = outputFolder.resolve("data/" + key.getNamespace() + "/loot_tables/" + key.getPath() + ".json");
             try {
-                IDataProvider.save(GSON, cache, LootTableManager.toJson(lootTable), path);
+                IDataProvider.save(GSON, cache, LootTableManager.serialize(lootTable), path);
             } catch (IOException e) {
                 LOGGER.error("Couldn't write loot table {}", path, e);
             }

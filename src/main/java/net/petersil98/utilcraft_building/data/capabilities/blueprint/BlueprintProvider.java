@@ -30,17 +30,11 @@ public class BlueprintProvider implements ICapabilitySerializable<CompoundNBT> {
 
     @Override
     public CompoundNBT serializeNBT() {
-        if (CapabilityBlueprint.BLUEPRINT_CAPABILITY == null) {
-            return new CompoundNBT();
-        } else {
-            return (CompoundNBT) CapabilityBlueprint.BLUEPRINT_CAPABILITY.writeNBT(blueprint, null);
-        }
+        return (CompoundNBT) CapabilityBlueprint.BLUEPRINT_CAPABILITY.writeNBT(blueprint, null);
     }
 
     @Override
     public void deserializeNBT(CompoundNBT nbt) {
-        if (CapabilityBlueprint.BLUEPRINT_CAPABILITY != null) {
-            CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(blueprint, null, nbt);
-        }
+        CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(blueprint, null, nbt);
     }
 }

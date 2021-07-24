@@ -28,22 +28,22 @@ public class SyncButtonPressed {
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayerEntity player = ctx.get().getSender();
-            if(player != null && player.openContainer instanceof ArchitectTableContainer) {
+            if(player != null && player.containerMenu instanceof ArchitectTableContainer) {
                 switch (this.buttonId) {
                     case ArchitectTableScreen.PREVIOUS_BUTTON_ID: {
-                        ((ArchitectTableContainer) player.openContainer).previousLayer();
+                        ((ArchitectTableContainer) player.containerMenu).previousLayer();
                         break;
                     }
                     case ArchitectTableScreen.NEXT_BUTTON_ID: {
-                        ((ArchitectTableContainer) player.openContainer).nextLayer();
+                        ((ArchitectTableContainer) player.containerMenu).nextLayer();
                         break;
                     }
                     case ArchitectTableScreen.ADD_LAYER_BUTTON_ID: {
-                        ((ArchitectTableContainer) player.openContainer).addLayer();
+                        ((ArchitectTableContainer) player.containerMenu).addLayer();
                         break;
                     }
                     case ArchitectTableScreen.REMOVE_LAYER_BUTTON_ID: {
-                        ((ArchitectTableContainer) player.openContainer).removeCurrentLayer();
+                        ((ArchitectTableContainer) player.containerMenu).removeCurrentLayer();
                         break;
                     }
                 }

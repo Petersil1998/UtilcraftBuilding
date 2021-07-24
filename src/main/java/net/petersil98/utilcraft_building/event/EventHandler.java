@@ -23,7 +23,6 @@ public class EventHandler {
 
     @SubscribeEvent
     public static void villagerTrades(@Nonnull VillagerTradesEvent event){
-        AbstractChunkProvider.
         if(event.getType().equals(VillagerProfession.LIBRARIAN)) {
             ItemStack stack = new ItemStack(UtilcraftBuildingItems.BLUEPRINT);
             stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
@@ -32,10 +31,10 @@ public class EventHandler {
                 for(int i = 0; i < ArchitectTableContainer.SIZE; i++) {
                     pattern.get(0).add(new ArrayList<>());
                     for(int j = 0; j < ArchitectTableContainer.SIZE; j++) {
-                        pattern.get(0).get(i).add(Blocks.AIR.getDefaultState());
+                        pattern.get(0).get(i).add(Blocks.AIR.defaultBlockState());
                     }
                 }
-                pattern.get(0).get(0).set(0,Blocks.BLACK_WOOL.getDefaultState());
+                pattern.get(0).get(0).set(0,Blocks.BLACK_WOOL.defaultBlockState());
                 iBluePrint.setPattern(pattern);
             });
             event.getTrades().get(1).add(new BasicTrade(10, stack, 1, 10, 0.125f));

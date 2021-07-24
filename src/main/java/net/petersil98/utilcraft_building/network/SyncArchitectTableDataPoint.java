@@ -30,10 +30,10 @@ public class SyncArchitectTableDataPoint {
 
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            if(Minecraft.getInstance().currentScreen instanceof ArchitectTableScreen) {
-                ArchitectTableScreen screen = (ArchitectTableScreen) Minecraft.getInstance().currentScreen;
-                screen.getContainer().setMaxLayer(this.maxLayer);
-                screen.getContainer().setCurrentLayer(this.currentLayer);
+            if(Minecraft.getInstance().screen instanceof ArchitectTableScreen) {
+                ArchitectTableScreen screen = (ArchitectTableScreen) Minecraft.getInstance().screen;
+                screen.getMenu().setMaxLayer(this.maxLayer);
+                screen.getMenu().setCurrentLayer(this.currentLayer);
             }
         });
         return true;

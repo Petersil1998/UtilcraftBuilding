@@ -19,8 +19,8 @@ public class CreateStructurePacket {
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
             ServerPlayerEntity player = ctx.get().getSender();
-            if(player != null && player.openContainer instanceof BlueprintBlockContainer) {
-                ((BlueprintBlockContainer) player.openContainer).createStructure();
+            if(player != null && player.containerMenu instanceof BlueprintBlockContainer) {
+                ((BlueprintBlockContainer) player.containerMenu).createStructure();
             }
         });
         return true;

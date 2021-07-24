@@ -19,7 +19,7 @@ public class BlueprintInventory implements IInventory {
     }
 
     @Override
-    public int getSizeInventory() {
+    public int getContainerSize() {
         return this.stackList.size();
     }
 
@@ -35,37 +35,37 @@ public class BlueprintInventory implements IInventory {
 
     @Nonnull
     @Override
-    public ItemStack getStackInSlot(int index) {
-        return index >= this.getSizeInventory() ? ItemStack.EMPTY : this.stackList.get(index);
+    public ItemStack getItem(int index) {
+        return index >= this.getContainerSize() ? ItemStack.EMPTY : this.stackList.get(index);
     }
 
     @Nonnull
     @Override
-    public ItemStack decrStackSize(int index, int count) {
-        return ItemStackHelper.getAndSplit(this.stackList, index, count);
+    public ItemStack removeItem(int index, int count) {
+        return ItemStackHelper.removeItem(this.stackList, index, count);
     }
 
     @Nonnull
     @Override
-    public ItemStack removeStackFromSlot(int index) {
-        return ItemStackHelper.getAndRemove(this.stackList, index);
+    public ItemStack removeItemNoUpdate(int index) {
+        return ItemStackHelper.takeItem(this.stackList, index);
     }
 
     @Override
-    public void setInventorySlotContents(int index, @Nonnull ItemStack stack) {
+    public void setItem(int index, @Nonnull ItemStack stack) {
         this.stackList.set(index, stack);
     }
 
     @Override
-    public void markDirty() {}
+    public void setChanged() {}
 
     @Override
-    public boolean isUsableByPlayer(@Nonnull PlayerEntity player) {
+    public boolean stillValid(@Nonnull PlayerEntity player) {
         return true;
     }
 
     @Override
-    public void clear() {
+    public void clearContent() {
         this.stackList.clear();
     }
 
@@ -74,7 +74,7 @@ public class BlueprintInventory implements IInventory {
     }
 
     @Override
-    public int getInventoryStackLimit() {
+    public int getMaxStackSize() {
         return 1;
     }
 }

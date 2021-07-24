@@ -30,12 +30,14 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.item.Item.Properties;
+
 public class Blueprint extends Item {
 
     public Blueprint() {
         super(new Properties()
-                .group(UtilcraftBuilding.ITEM_GROUP)
-                .maxStackSize(1)
+                .tab(UtilcraftBuilding.ITEM_GROUP)
+                .stacksTo(1)
         );
     }
 
@@ -46,15 +48,15 @@ public class Blueprint extends Item {
     }
 
     @Override
-    public void addInformation(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag) {
-        super.addInformation(stack, world, tooltip, flag);
+    public void appendHoverText(@Nonnull ItemStack stack, @Nullable World world, @Nonnull List<ITextComponent> tooltip, @Nonnull ITooltipFlag flag) {
+        super.appendHoverText(stack, world, tooltip, flag);
         Map<BlockState, Integer> blocks = BlueprintUtils.listBlockStatesFromCapability(stack);
-        blocks.forEach((blockState, count) -> tooltip.add(new TranslationTextComponent("blueprint.utilcraft_building.tooltip", count, new TranslationTextComponent(blockState.getBlock().getTranslationKey())).setStyle(Style.EMPTY.setColor(Color.fromInt(TextFormatting.BLUE.getColor())))));
+        blocks.forEach((blockState, count) -> tooltip.add(new TranslationTextComponent("blueprint.utilcraft_building.tooltip", count, new TranslationTextComponent(blockState.getBlock().getDescriptionId())).setStyle(Style.EMPTY.withColor(Color.fromRgb(TextFormatting.BLUE.getColor())))));
     }
 
     @Nonnull
     @Override
-    public ActionResultType onItemUse(@Nonnull ItemUseContext context) {
+    public ActionResultType useOn(@Nonnull ItemUseContext context) {
         return this.tryPlace(new BlockItemUseContext(context));
     }
 
@@ -65,20 +67,20 @@ public class Blueprint extends Item {
             BlockState blockstate = UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.getStateForPlacement(context);
             if (blockstate == null) {
                 return ActionResultType.FAIL;
-            } else if (!context.getWorld().setBlockState(context.getPos(), blockstate, 11)) {
+            } else if (!context.getLevel().setBlock(context.getClickedPos(), blockstate, 11)) {
                 return ActionResultType.FAIL;
             } else {
-                BlockPos blockpos = context.getPos();
-                World world = context.getWorld();
+                BlockPos blockpos = context.getClickedPos();
+                World world = context.getLevel();
                 PlayerEntity playerentity = context.getPlayer();
-                ItemStack itemstack = context.getItem();
+                ItemStack itemstack = context.getItemInHand();
                 BlockState otherState = world.getBlockState(blockpos);
                 Block other = otherState.getBlock();
                 if (other == blockstate.getBlock()) {
                     otherState = this.getRealBlockState(blockpos, world, itemstack, otherState);
-                    BlockItem.setTileEntityNBT(world, playerentity, blockpos, itemstack);
-                    other.onBlockPlacedBy(world, blockpos, otherState, playerentity, itemstack);
-                    this.setCapability(world, blockpos, context.getItem());
+                    BlockItem.updateCustomBlockEntityTag(world, playerentity, blockpos, itemstack);
+                    other.setPlacedBy(world, blockpos, otherState, playerentity, itemstack);
+                    this.setCapability(world, blockpos, context.getItemInHand());
                     if (playerentity instanceof ServerPlayerEntity) {
                         CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity)playerentity, blockpos, itemstack);
                     }
@@ -87,7 +89,7 @@ public class Blueprint extends Item {
                 SoundType soundtype = otherState.getSoundType(world, blockpos, context.getPlayer());
                 world.playSound(playerentity, blockpos, otherState.getSoundType(world, blockpos, context.getPlayer()).getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
 
-                return ActionResultType.func_233537_a_(world.isRemote);
+                return ActionResultType.sidedSuccess(world.isClientSide);
             }
         }
     }
@@ -97,30 +99,30 @@ public class Blueprint extends Item {
         CompoundNBT compoundnbt = itemStack.getTag();
         if (compoundnbt != null) {
             CompoundNBT blockStateTag = compoundnbt.getCompound("BlockStateTag");
-            StateContainer<Block, BlockState> stateContainer = blockState.getBlock().getStateContainer();
+            StateContainer<Block, BlockState> stateContainer = blockState.getBlock().getStateDefinition();
 
-            for(String s : blockStateTag.keySet()) {
+            for(String s : blockStateTag.getAllKeys()) {
                 Property<?> property = stateContainer.getProperty(s);
                 if (property != null) {
-                    String s1 = blockStateTag.get(s).getString();
+                    String s1 = blockStateTag.get(s).getAsString();
                     blockstate = applyProperty(blockstate, property, s1);
                 }
             }
         }
 
         if (blockstate != blockState) {
-            world.setBlockState(blockPos, blockstate, 2);
+            world.setBlock(blockPos, blockstate, 2);
         }
 
         return blockstate;
     }
 
     private static <T extends Comparable<T>> BlockState applyProperty(BlockState blockState, @Nonnull Property<T> property, String state) {
-        return property.parseValue(state).map((value) -> blockState.with(property, value)).orElse(blockState);
+        return property.getValue(state).map((value) -> blockState.setValue(property, value)).orElse(blockState);
     }
 
     private void setCapability(@Nonnull World world, BlockPos pos, ItemStack itemStack) {
-        TileEntity tileentity = world.getTileEntity(pos);
+        TileEntity tileentity = world.getBlockEntity(pos);
         if (tileentity instanceof BlueprintBlockTileEntity) {
             itemStack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY)
                     .ifPresent(iBluePrint -> tileentity.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY)

@@ -20,7 +20,7 @@ public class SyncBlueprintTECapability {
 
     public SyncBlueprintTECapability(@Nonnull BlockPos blockPos, World world) {
         AtomicReference<INBT> tag = new AtomicReference<>();
-        world.getTileEntity(blockPos).getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+        world.getBlockEntity(blockPos).getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
             tag.set(CapabilityBlueprint.BLUEPRINT_CAPABILITY.writeNBT(iBluePrint, null));
         });
         this.data = tag.get();
@@ -28,19 +28,19 @@ public class SyncBlueprintTECapability {
     }
 
     public SyncBlueprintTECapability(@Nonnull PacketBuffer packetBuffer) {
-        this.data = packetBuffer.readCompoundTag();
+        this.data = packetBuffer.readNbt();
         this.blockPos = packetBuffer.readBlockPos();
     }
 
     public void encode(@Nonnull PacketBuffer buf) {
-        buf.writeCompoundTag((CompoundNBT) this.data);
+        buf.writeNbt((CompoundNBT) this.data);
         buf.writeBlockPos(this.blockPos);
     }
 
     public boolean handle(@Nonnull Supplier<NetworkEvent.Context> ctx) {
         ctx.get().enqueueWork(() -> {
-            if(Minecraft.getInstance().world != null) {
-                Minecraft.getInstance().world.getTileEntity(this.blockPos).getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(iBluePrint, null, this.data));
+            if(Minecraft.getInstance().level != null) {
+                Minecraft.getInstance().level.getBlockEntity(this.blockPos).getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(iBluePrint, null, this.data));
             }
         });
         return true;
