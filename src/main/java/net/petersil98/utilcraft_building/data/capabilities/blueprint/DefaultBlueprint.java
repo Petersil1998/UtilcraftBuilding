@@ -1,0 +1,20 @@
+package net.petersil98.utilcraft_building.data.capabilities.blueprint;
+
+import net.minecraft.world.level.block.state.BlockState;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DefaultBlueprint implements IBluePrint {
+
+    private List<List<List<BlockState>>> pattern = new ArrayList<>();
+
+    @Override
+    public void setPattern(List<List<List<BlockState>>> pattern) {
+        this.pattern = pattern;
+    }
+
+    public List<List<List<BlockState>>> getPattern() {
+        return pattern;
+    }
+}
