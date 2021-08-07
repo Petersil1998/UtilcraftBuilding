@@ -18,6 +18,7 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.IWorldPosCallable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.NetworkHooks;
@@ -77,6 +78,6 @@ public class BlueprintBlock extends Block {
     @Nullable
     @SuppressWarnings("deprecation")
     public INamedContainerProvider getMenuProvider(@Nonnull BlockState state, @Nonnull World world, @Nonnull BlockPos pos) {
-        return new SimpleNamedContainerProvider((id, inventory, player) -> new BlueprintBlockContainer(id, inventory, IWorldPosCallable.create(world, pos)), getName());
+        return new SimpleNamedContainerProvider((id, inventory, player) -> new BlueprintBlockContainer(id, inventory, IWorldPosCallable.create(world, pos)), new TranslationTextComponent(getDescriptionId()));
     }
 }
