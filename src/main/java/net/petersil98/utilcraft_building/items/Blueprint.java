@@ -4,7 +4,9 @@ import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SoundType;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.*;
@@ -22,6 +24,8 @@ import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.BlueprintProvider;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
+import net.petersil98.utilcraft_building.network.PacketHandler;
+import net.petersil98.utilcraft_building.network.SyncBlueprintTECapability;
 import net.petersil98.utilcraft_building.tile_entities.BlueprintBlockTileEntity;
 import net.petersil98.utilcraft_building.utils.BlueprintUtils;
 
@@ -29,8 +33,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
-
-import net.minecraft.item.Item.Properties;
 
 public class Blueprint extends Item {
 
@@ -72,22 +74,23 @@ public class Blueprint extends Item {
             } else {
                 BlockPos blockpos = context.getClickedPos();
                 World world = context.getLevel();
-                PlayerEntity playerentity = context.getPlayer();
+                PlayerEntity player = context.getPlayer();
                 ItemStack itemstack = context.getItemInHand();
                 BlockState otherState = world.getBlockState(blockpos);
                 Block other = otherState.getBlock();
                 if (other == blockstate.getBlock()) {
                     otherState = this.getRealBlockState(blockpos, world, itemstack, otherState);
-                    BlockItem.updateCustomBlockEntityTag(world, playerentity, blockpos, itemstack);
-                    other.setPlacedBy(world, blockpos, otherState, playerentity, itemstack);
+                    BlockItem.updateCustomBlockEntityTag(world, player, blockpos, itemstack);
+                    other.setPlacedBy(world, blockpos, otherState, player, itemstack);
                     this.setCapability(world, blockpos, context.getItemInHand());
-                    if (playerentity instanceof ServerPlayerEntity) {
-                        CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity)playerentity, blockpos, itemstack);
+                    if (player instanceof ServerPlayerEntity) {
+                        PacketHandler.sendToClient(new SyncBlueprintTECapability(blockpos, world), (ServerPlayerEntity) player);
+                        CriteriaTriggers.PLACED_BLOCK.trigger((ServerPlayerEntity)player, blockpos, itemstack);
                     }
                 }
 
                 SoundType soundtype = otherState.getSoundType(world, blockpos, context.getPlayer());
-                world.playSound(playerentity, blockpos, otherState.getSoundType(world, blockpos, context.getPlayer()).getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
+                world.playSound(player, blockpos, otherState.getSoundType(world, blockpos, context.getPlayer()).getPlaceSound(), SoundCategory.BLOCKS, (soundtype.getVolume() + 1.0F) / 2.0F, soundtype.getPitch() * 0.8F);
 
                 return ActionResultType.sidedSuccess(world.isClientSide);
             }
