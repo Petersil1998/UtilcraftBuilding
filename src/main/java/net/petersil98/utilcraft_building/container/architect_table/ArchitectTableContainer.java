@@ -94,14 +94,14 @@ public class ArchitectTableContainer extends Container {
             @Override
             public ItemStack onTake(@Nonnull PlayerEntity player, @Nonnull ItemStack stack) {
                 if(!player.level.isClientSide) {
-                    ItemStack result = updateBlueprintFromInventory(stack);
+                    updateBlueprintFromInventory(stack);
                     currentLayer = 0;
                     maxLayer = 0;
                     currentInventory.clearContent();
                     broadcastChanges();
                     syncData();
-                    syncCapabilities();
-                    return result;
+                    syncCapabilities(stack);
+                    return stack;
                 }
                 return super.onTake(player, stack);
             }
@@ -412,7 +412,7 @@ public class ArchitectTableContainer extends Container {
     public void nextLayer() {
         if (this.hasNextLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
-            stack = this.updateBlueprintFromInventory(stack);
+            this.updateBlueprintFromInventory(stack);
             this.currentLayer++;
             this.updateInventoryFromBlueprint(stack);
             this.blueprintInventory.setItem(0, stack);
@@ -424,7 +424,7 @@ public class ArchitectTableContainer extends Container {
     public void previousLayer() {
         if(this.hasPreviousLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
-            stack = this.updateBlueprintFromInventory(stack);
+            this.updateBlueprintFromInventory(stack);
             if(hasPreviousLayer()) {
                 this.currentLayer--;
             }
@@ -517,8 +517,7 @@ public class ArchitectTableContainer extends Container {
         }
     }
 
-    @Nonnull
-    private ItemStack updateBlueprintFromInventory(@Nonnull ItemStack stack) {
+    private void updateBlueprintFromInventory(@Nonnull ItemStack stack) {
         AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
         List<List<List<BlockState>>> pattern = patternReference.get();
@@ -543,7 +542,6 @@ public class ArchitectTableContainer extends Container {
             list.add(blockStates);
         }
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> iBluePrint.setPattern(pattern));
-        return stack;
     }
 
     /**
@@ -575,8 +573,8 @@ public class ArchitectTableContainer extends Container {
         PacketHandler.sendToClient(new SyncArchitectTableDataPoint(this.currentLayer, this.maxLayer), (ServerPlayerEntity) this.playerEntity);
     }
 
-    private void syncCapabilities() {
-        PacketHandler.sendToClient(new SyncBlueprintItemCapability(this.getBlueprint()), (ServerPlayerEntity) this.playerEntity);
+    private void syncCapabilities(ItemStack toSync) {
+        PacketHandler.sendToClient(new SyncBlueprintItemCapability(toSync), (ServerPlayerEntity) this.playerEntity);
     }
 
     protected void resetQuickCraft() {
