@@ -1,6 +1,7 @@
 package net.petersil98.utilcraft_building.items;
 
 import net.minecraft.advancements.CriteriaTriggers;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.SoundType;
@@ -18,6 +19,7 @@ import net.minecraft.world.level.Level;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
+import net.petersil98.utilcraft_building.data.capabilities.CapabilityStoreHelper;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.BlueprintProvider;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
 import net.petersil98.utilcraft_building.block_entities.BlueprintBlockEntity;
@@ -27,6 +29,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -65,6 +68,29 @@ public class Blueprint extends Item {
     @Override
     public InteractionResult useOn(@Nonnull UseOnContext context) {
         return this.tryPlace(new BlockPlaceContext(context));
+    }
+
+    @Override
+    public void readShareTag(ItemStack stack, @Nullable CompoundTag nbt) {
+        super.readShareTag(stack, nbt);
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+            CapabilityStoreHelper.readBlueprintCapability((CompoundTag) nbt.get(UtilcraftBuilding.MOD_ID+"_capData"), iBluePrint);
+        });
+    }
+
+    @Nullable
+    @Override
+    public CompoundTag getShareTag(ItemStack stack) {
+        CompoundTag tag = super.getShareTag(stack);
+        if(tag == null) {
+            tag = new CompoundTag();
+        }
+        AtomicReference<Tag> capTag = new AtomicReference<>();
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+            capTag.set(CapabilityStoreHelper.storeBlueprintCapability(iBluePrint));
+        });
+        tag.put(UtilcraftBuilding.MOD_ID+"_capData", capTag.get());
+        return tag;
     }
 
     private InteractionResult tryPlace(@Nonnull BlockPlaceContext context) {

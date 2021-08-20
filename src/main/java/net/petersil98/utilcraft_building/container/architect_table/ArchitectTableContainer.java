@@ -31,7 +31,6 @@ import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityB
 import net.petersil98.utilcraft_building.items.Blueprint;
 import net.petersil98.utilcraft_building.network.PacketHandler;
 import net.petersil98.utilcraft_building.network.SyncArchitectTableDataPoint;
-import net.petersil98.utilcraft_building.network.SyncBlueprintItemCapability;
 
 import javax.annotation.Nonnull;
 import java.lang.reflect.InvocationTargetException;
@@ -41,7 +40,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-//TODO: Fix changing blueprints in table
 public class ArchitectTableContainer extends AbstractContainerMenu {
 
     private final ContainerLevelAccess worldPosCallable;
@@ -93,13 +91,12 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
             @Override
             public void onTake(@Nonnull Player player, @Nonnull ItemStack stack) {
                 if(!player.level.isClientSide) {
-                    ItemStack result = updateBlueprintFromInventory(stack);
+                    updateBlueprintFromInventory(stack);
                     currentLayer = 0;
                     maxLayer = 0;
                     currentInventory.clearContent();
                     broadcastChanges();
                     syncData();
-                    syncCapabilities();
                 }
             }
 
@@ -559,10 +556,6 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
 
     private void syncData() {
         PacketHandler.sendToClient(new SyncArchitectTableDataPoint(this.currentLayer, this.maxLayer), (ServerPlayer) this.playerEntity);
-    }
-
-    private void syncCapabilities() {
-        PacketHandler.sendToClient(new SyncBlueprintItemCapability(this.getBlueprint()), (ServerPlayer) this.playerEntity);
     }
 
     protected void resetQuickCraft() {
