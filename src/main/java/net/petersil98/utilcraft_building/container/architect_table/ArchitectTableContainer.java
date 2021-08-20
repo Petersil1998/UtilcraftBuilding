@@ -81,6 +81,15 @@ public class ArchitectTableContainer extends Container {
                     public boolean mayPlace(@Nonnull ItemStack stack) {
                         return stack.getItem() instanceof BlockItem && !getBlueprint().equals(ItemStack.EMPTY);
                     }
+
+                    @Override
+                    public void setChanged() {
+                        super.setChanged();
+                        updateBlueprintFromInventory(getBlueprint());
+                        if(worldPosCallable.evaluate((world, blockPos) -> !world.isClientSide()).orElse(false)) {
+                            syncBlueprintCapabilities();
+                        }
+                    }
                 });
             }
         }
@@ -94,14 +103,11 @@ public class ArchitectTableContainer extends Container {
             @Override
             public ItemStack onTake(@Nonnull PlayerEntity player, @Nonnull ItemStack stack) {
                 if(!player.level.isClientSide) {
-                    updateBlueprintFromInventory(stack);
                     currentLayer = 0;
                     maxLayer = 0;
                     currentInventory.clearContent();
                     broadcastChanges();
                     syncData();
-                    syncCapabilities(stack);
-                    return stack;
                 }
                 return super.onTake(player, stack);
             }
@@ -485,7 +491,7 @@ public class ArchitectTableContainer extends Container {
     }
 
     @Nonnull
-    private ItemStack getBlueprint() {
+    public ItemStack getBlueprint() {
         return this.blueprintInventory.getItem(0);
     }
 
@@ -573,8 +579,8 @@ public class ArchitectTableContainer extends Container {
         PacketHandler.sendToClient(new SyncArchitectTableDataPoint(this.currentLayer, this.maxLayer), (ServerPlayerEntity) this.playerEntity);
     }
 
-    private void syncCapabilities(ItemStack toSync) {
-        PacketHandler.sendToClient(new SyncBlueprintItemCapability(toSync), (ServerPlayerEntity) this.playerEntity);
+    private void syncBlueprintCapabilities() {
+        PacketHandler.sendToClient(new SyncBlueprintItemCapability(getBlueprint()), (ServerPlayerEntity) this.playerEntity);
     }
 
     protected void resetQuickCraft() {
