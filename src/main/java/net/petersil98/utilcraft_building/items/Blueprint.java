@@ -11,6 +11,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.*;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.INBT;
 import net.minecraft.state.Property;
 import net.minecraft.state.StateContainer;
 import net.minecraft.tileentity.TileEntity;
@@ -33,6 +34,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Blueprint extends Item {
 
@@ -60,6 +62,29 @@ public class Blueprint extends Item {
     @Override
     public ActionResultType useOn(@Nonnull ItemUseContext context) {
         return this.tryPlace(new BlockItemUseContext(context));
+    }
+
+    @Override
+    public void readShareTag(ItemStack stack, @Nullable CompoundNBT nbt) {
+        super.readShareTag(stack, nbt);
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+            CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(iBluePrint, null, nbt.get(UtilcraftBuilding.MOD_ID+"_capData"));
+        });
+    }
+
+    @Nullable
+    @Override
+    public CompoundNBT getShareTag(ItemStack stack) {
+        CompoundNBT tag = super.getShareTag(stack);
+        if(tag == null) {
+            tag = new CompoundNBT();
+        }
+        AtomicReference<INBT> capTag = new AtomicReference<>();
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
+            capTag.set(CapabilityBlueprint.BLUEPRINT_CAPABILITY.writeNBT(iBluePrint, null));
+        });
+        tag.put(UtilcraftBuilding.MOD_ID+"_capData", capTag.get());
+        return tag;
     }
 
     private ActionResultType tryPlace(@Nonnull BlockItemUseContext context) {
