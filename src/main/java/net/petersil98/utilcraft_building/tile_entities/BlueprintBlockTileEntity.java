@@ -19,7 +19,7 @@ public class BlueprintBlockTileEntity extends TileEntity {
     private final LazyOptional<IBluePrint> blueprintOptional = LazyOptional.of(() -> blueprint);
 
     public BlueprintBlockTileEntity() {
-        super(UtilcraftBuildingTileEntities.BLUEPRINT_BLOCK);
+        super(UtilcraftBuildingTileEntities.BLUEPRINT_BLOCK.get());
     }
 
     @Nonnull

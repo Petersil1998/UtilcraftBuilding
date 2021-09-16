@@ -53,7 +53,7 @@ public class BlueprintBlockTileEntityRenderer extends TileEntityRenderer<Bluepri
 
     public void render(@Nonnull BlueprintBlockTileEntity tileEntity, float partialTicks, @Nonnull MatrixStack matrixStack, @Nonnull IRenderTypeBuffer buffer, int combinedLight, int combinedOverlay) {
         World world = tileEntity.getLevel();
-        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.defaultBlockState();
+        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get().defaultBlockState();
         Block block = blockstate.getBlock();
         if (block instanceof BlueprintBlock) {
             matrixStack.pushPose();

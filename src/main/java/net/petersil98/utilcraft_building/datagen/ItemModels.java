@@ -19,8 +19,8 @@ public class ItemModels extends ItemModelProvider {
 
     @Override
     protected void registerModels() {
-        registerBlockItem(UtilcraftBuildingBlocks.ARCHITECT_TABLE);
-        registerHandheld(UtilcraftBuildingItems.BLUEPRINT);
+        registerBlockItem(UtilcraftBuildingBlocks.ARCHITECT_TABLE.get());
+        registerHandheld(UtilcraftBuildingItems.BLUEPRINT.get());
     }
 
     private void registerHandheld(Item item) {

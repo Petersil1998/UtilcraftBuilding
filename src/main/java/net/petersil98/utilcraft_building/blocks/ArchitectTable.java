@@ -1,9 +1,7 @@
 package net.petersil98.utilcraft_building.blocks;
 
-import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.container.INamedContainerProvider;
 import net.minecraft.inventory.container.SimpleNamedContainerProvider;
@@ -12,7 +10,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.IWorldPosCallable;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
-import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
@@ -22,12 +19,8 @@ import javax.annotation.Nullable;
 
 public class ArchitectTable extends Block {
 
-    public ArchitectTable() {
-        super(AbstractBlock.Properties
-                .of(Material.STONE)
-                .requiresCorrectToolForDrops()
-                .strength(3.5F)
-                .noOcclusion());
+    public ArchitectTable(Properties properties) {
+        super(properties);
     }
 
     @Nonnull

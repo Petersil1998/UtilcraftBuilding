@@ -4,7 +4,6 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.merchant.villager.VillagerProfession;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.chunk.AbstractChunkProvider;
 import net.minecraftforge.common.BasicTrade;
 import net.minecraftforge.event.village.VillagerTradesEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -24,7 +23,7 @@ public class EventHandler {
     @SubscribeEvent
     public static void villagerTrades(@Nonnull VillagerTradesEvent event){
         if(event.getType().equals(VillagerProfession.LIBRARIAN)) {
-            ItemStack stack = new ItemStack(UtilcraftBuildingItems.BLUEPRINT);
+            ItemStack stack = new ItemStack(UtilcraftBuildingItems.BLUEPRINT.get());
             stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
                 List<List<List<BlockState>>> pattern = new ArrayList<>();
                 pattern.add(new ArrayList<>());

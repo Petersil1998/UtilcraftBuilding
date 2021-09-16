@@ -4,9 +4,7 @@ import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SoundType;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.*;
@@ -38,11 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Blueprint extends Item {
 
-    public Blueprint() {
-        super(new Properties()
-                .tab(UtilcraftBuilding.ITEM_GROUP)
-                .stacksTo(1)
-        );
+    public Blueprint(Properties properties) {
+        super(properties);
     }
 
     @Nullable
@@ -67,9 +62,8 @@ public class Blueprint extends Item {
     @Override
     public void readShareTag(ItemStack stack, @Nullable CompoundNBT nbt) {
         super.readShareTag(stack, nbt);
-        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
-            CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(iBluePrint, null, nbt.get(UtilcraftBuilding.MOD_ID+"_capData"));
-        });
+        stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint ->
+                CapabilityBlueprint.BLUEPRINT_CAPABILITY.readNBT(iBluePrint, null, nbt.get(UtilcraftBuilding.MOD_ID+"_capData")));
     }
 
     @Nullable
@@ -91,7 +85,7 @@ public class Blueprint extends Item {
         if (!context.canPlace()) {
             return ActionResultType.FAIL;
         } else {
-            BlockState blockstate = UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.getStateForPlacement(context);
+            BlockState blockstate = UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get().getStateForPlacement(context);
             if (blockstate == null) {
                 return ActionResultType.FAIL;
             } else if (!context.getLevel().setBlock(context.getClickedPos(), blockstate, 11)) {

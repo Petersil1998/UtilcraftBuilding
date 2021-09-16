@@ -5,7 +5,6 @@ import net.minecraftforge.common.data.LanguageProvider;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.items.UtilcraftBuildingItems;
-import org.jetbrains.annotations.Contract;
 
 import javax.annotation.Nonnull;
 
@@ -29,9 +28,9 @@ public class Languages {
 
         @Override
         protected void addTranslations() {
-            add(UtilcraftBuildingBlocks.ARCHITECT_TABLE, "Architect's Table");
-            add(UtilcraftBuildingItems.BLUEPRINT, "Blueprint");
-            add(UtilcraftBuildingBlocks.BLUEPRINT_BLOCK, "Blueprint Layout");
+            add(UtilcraftBuildingBlocks.ARCHITECT_TABLE.get(), "Architect's Table");
+            add(UtilcraftBuildingItems.BLUEPRINT.get(), "Blueprint");
+            add(UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get(), "Blueprint Layout");
 
             add(String.format("itemGroup.%s", UtilcraftBuilding.MOD_ID), "Utilcraft Building");
             add(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID), "Layer %d/%d");

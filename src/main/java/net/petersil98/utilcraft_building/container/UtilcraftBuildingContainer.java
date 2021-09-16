@@ -1,16 +1,17 @@
 package net.petersil98.utilcraft_building.container;
 
 import net.minecraft.inventory.container.ContainerType;
-import net.minecraftforge.registries.ObjectHolder;
+import net.minecraftforge.common.extensions.IForgeContainerType;
+import net.minecraftforge.fml.RegistryObject;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.container.architect_table.ArchitectTableContainer;
 
-@ObjectHolder(UtilcraftBuilding.MOD_ID)
 public class UtilcraftBuildingContainer {
 
-    @ObjectHolder("architect_table")
-    public static ContainerType<ArchitectTableContainer> ARCHITECT_TABLE_CONTAINER;
+    public static final DeferredRegister<ContainerType<?>> CONTAINERS = DeferredRegister.create(ForgeRegistries.CONTAINERS, UtilcraftBuilding.MOD_ID);
 
-    @ObjectHolder("blueprint_block")
-    public static ContainerType<BlueprintBlockContainer> BLUEPRINT_BLOCK_CONTAINER;
+    public static final RegistryObject<ContainerType<ArchitectTableContainer>> ARCHITECT_TABLE_CONTAINER = CONTAINERS.register("architect_table", () -> IForgeContainerType.create((windowId, inv, data) -> new ArchitectTableContainer(windowId, inv)));
+    public static final RegistryObject<ContainerType<BlueprintBlockContainer>> BLUEPRINT_BLOCK_CONTAINER = CONTAINERS.register("blueprint_block", () -> IForgeContainerType.create(BlueprintBlockContainer::new));
 }

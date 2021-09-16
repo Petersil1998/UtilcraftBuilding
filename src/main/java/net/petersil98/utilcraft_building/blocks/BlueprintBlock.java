@@ -1,10 +1,8 @@
 package net.petersil98.utilcraft_building.blocks;
 
-import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.HorizontalBlock;
-import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.inventory.container.INamedContainerProvider;
@@ -32,14 +30,8 @@ public class BlueprintBlock extends Block {
 
     public static final DirectionProperty FACING = HorizontalBlock.FACING;
 
-    public BlueprintBlock() {
-        super(AbstractBlock.Properties
-                .of(Material.STONE)
-                .requiresCorrectToolForDrops()
-                .strength(3.5F)
-                .noDrops()
-                .noCollission()
-        );
+    public BlueprintBlock(Properties properties) {
+        super(properties);
     }
 
     @Override

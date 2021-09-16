@@ -25,6 +25,7 @@ import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.vector.Vector3d;
 import net.minecraft.util.registry.Registry;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
+import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.container.UtilcraftBuildingContainer;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
@@ -40,7 +41,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
-//TODO: Fix changing blueprints in table
 public class ArchitectTableContainer extends Container {
 
     private final IWorldPosCallable worldPosCallable;
@@ -63,7 +63,7 @@ public class ArchitectTableContainer extends Container {
     }
 
     public ArchitectTableContainer(int id, @Nonnull PlayerInventory playerInventory, IWorldPosCallable worldPosCallable) {
-        super(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, id);
+        super(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER.get(), id);
         this.worldPosCallable = worldPosCallable;
         this.currentLayer = 0;
         this.maxLayer = 0;
@@ -324,7 +324,7 @@ public class ArchitectTableContainer extends Container {
                         try {
                             onSwapCraft.invoke(slot, stackInSlot.getCount());
                         } catch (IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
+                            UtilcraftBuilding.LOGGER.error("Failed to invoke Method onSwapCraft", e);
                         }
                         slot.set(ItemStack.EMPTY);
                         slot.onTake(player, stackInSlot);
@@ -403,7 +403,7 @@ public class ArchitectTableContainer extends Container {
      * Determines whether supplied player can use this container
      */
     public boolean stillValid(@Nonnull PlayerEntity player) {
-        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE);
+        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE.get());
     }
 
     public void nextLayer() {
