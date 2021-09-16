@@ -58,7 +58,6 @@ public class UtilcraftBuilding
     }
 
     private void setup(final FMLCommonSetupEvent event) {
-        CapabilityBlueprint.register();
         PacketHandler.registerMessages();
     }
 
@@ -75,5 +74,7 @@ public class UtilcraftBuilding
         ModelLoader.addSpecialModel(BlueprintBlockTileEntityRenderer.CUBE_MODEL);
     }
 
+    private void registerCapabilities(final RegisterCapabilitiesEvent event) {
+        CapabilityBlueprint.register(event);
     }
 }
