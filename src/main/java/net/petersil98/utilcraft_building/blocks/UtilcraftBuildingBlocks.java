@@ -13,5 +13,5 @@ public class UtilcraftBuildingBlocks {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, UtilcraftBuilding.MOD_ID);
 
     public static final RegistryObject<ArchitectTable> ARCHITECT_TABLE = BLOCKS.register("architect_table", () -> new ArchitectTable(AbstractBlock.Properties.of(Material.STONE).requiresCorrectToolForDrops().strength(3.5F).noOcclusion()));
-    public static final RegistryObject<BlueprintBlock> BLUEPRINT_BLOCK = BLOCKS.register("blueprint_block", () -> new BlueprintBlock(AbstractBlock.Properties.of(Material.STONE).strength(3.5F).noDrops().noCollission()));
+    public static final RegistryObject<BlueprintBlock> BLUEPRINT_BLOCK = BLOCKS.register("blueprint_block", () -> new BlueprintBlock(AbstractBlock.Properties.of(Material.STONE).noDrops().noCollission().instabreak()));
 }
