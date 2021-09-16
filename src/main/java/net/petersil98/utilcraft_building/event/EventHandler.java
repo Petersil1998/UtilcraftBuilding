@@ -23,7 +23,7 @@ public class EventHandler {
     @SubscribeEvent
     public static void villagerTrades(@Nonnull VillagerTradesEvent event){
         if(event.getType().equals(VillagerProfession.LIBRARIAN)) {
-            ItemStack stack = new ItemStack(UtilcraftBuildingItems.BLUEPRINT);
+            ItemStack stack = new ItemStack(UtilcraftBuildingItems.BLUEPRINT.get());
             stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
                 List<List<List<BlockState>>> pattern = new ArrayList<>();
                 pattern.add(new ArrayList<>());

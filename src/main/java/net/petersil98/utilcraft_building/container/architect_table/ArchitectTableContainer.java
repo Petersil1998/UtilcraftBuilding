@@ -25,6 +25,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.Registry;
 import net.minecraftforge.fml.util.ObfuscationReflectionHelper;
+import net.petersil98.utilcraft_building.UtilcraftBuilding;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.container.UtilcraftBuildingContainer;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
@@ -62,7 +63,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
     }
 
     public ArchitectTableContainer(int id, @Nonnull Inventory playerInventory, ContainerLevelAccess worldPosCallable) {
-        super(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER, id);
+        super(UtilcraftBuildingContainer.ARCHITECT_TABLE_CONTAINER.get(), id);
         this.worldPosCallable = worldPosCallable;
         this.currentLayer = 0;
         this.maxLayer = 0;
@@ -311,7 +312,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
                         try {
                             onSwapCraft.invoke(slot, stackInSlot.getCount());
                         } catch (IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
+                            UtilcraftBuilding.LOGGER.error("Failed to invoke Method onSwapCraft", e);
                         }
                         slot.set(ItemStack.EMPTY);
                         slot.onTake(player, stackInSlot);
@@ -389,7 +390,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
      * Determines whether supplied player can use this container
      */
     public boolean stillValid(@Nonnull Player player) {
-        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE);
+        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.ARCHITECT_TABLE.get());
     }
 
     public void nextLayer() {

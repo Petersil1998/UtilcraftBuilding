@@ -1,28 +1,38 @@
 package net.petersil98.utilcraft_building.items;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.advancements.CriteriaTriggers;
-import net.minecraft.nbt.Tag;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.SoundType;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.level.block.state.properties.Property;
-import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.BlockPos;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.network.chat.TranslatableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
+import net.petersil98.utilcraft_building.block_entities.BlueprintBlockEntity;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.data.capabilities.CapabilityStoreHelper;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.BlueprintProvider;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
-import net.petersil98.utilcraft_building.block_entities.BlueprintBlockEntity;
 import net.petersil98.utilcraft_building.utils.BlueprintUtils;
 
 import javax.annotation.Nonnull;
@@ -31,24 +41,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.network.chat.TranslatableComponent;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
-
 public class Blueprint extends Item {
 
-    public Blueprint() {
-        super(new Properties()
-                .tab(UtilcraftBuilding.ITEM_GROUP)
-                .stacksTo(1)
-        );
+    public Blueprint(Properties properties) {
+        super(properties);
     }
 
     @Nullable
@@ -97,7 +93,7 @@ public class Blueprint extends Item {
         if (!context.canPlace()) {
             return InteractionResult.FAIL;
         } else {
-            BlockState blockstate = UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.getStateForPlacement(context);
+            BlockState blockstate = UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get().getStateForPlacement(context);
             if (blockstate == null) {
                 return InteractionResult.FAIL;
             } else if (!context.getLevel().setBlock(context.getClickedPos(), blockstate, 11)) {

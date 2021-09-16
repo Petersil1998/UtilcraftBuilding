@@ -45,7 +45,7 @@ public class BlueprintBlockContainer extends AbstractContainerMenu {
     }
 
     public BlueprintBlockContainer(int id, @Nonnull Inventory playerInventory, ContainerLevelAccess worldPosCallable) {
-        super(UtilcraftBuildingContainer.BLUEPRINT_BLOCK_CONTAINER, id);
+        super(UtilcraftBuildingContainer.BLUEPRINT_BLOCK_CONTAINER.get(), id);
         this.worldPosCallable = worldPosCallable;
         this.player = playerInventory.player;
         this.rows = 3;
@@ -91,7 +91,7 @@ public class BlueprintBlockContainer extends AbstractContainerMenu {
      * Determines whether supplied player can use this container
      */
     public boolean stillValid(@Nonnull Player player) {
-        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK);
+        return stillValid(this.worldPosCallable, player, UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get());
     }
 
     /**

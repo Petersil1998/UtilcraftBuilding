@@ -1,33 +1,38 @@
 package net.petersil98.utilcraft_building.renderer;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.*;
 import net.minecraft.client.color.block.BlockColors;
+import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.block.BlockModelShaper;
 import net.minecraft.client.renderer.block.model.BakedQuad;
-import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.AirBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.client.RenderProperties;
 import net.minecraftforge.client.model.data.EmptyModelData;
-import net.minecraftforge.client.model.data.IModelData;
-import net.minecraftforge.client.model.pipeline.ForgeBlockModelRenderer;
 import net.minecraftforge.client.model.pipeline.LightUtil;
 import net.petersil98.utilcraft_building.UtilcraftBuilding;
+import net.petersil98.utilcraft_building.block_entities.BlueprintBlockEntity;
 import net.petersil98.utilcraft_building.blocks.BlueprintBlock;
 import net.petersil98.utilcraft_building.blocks.UtilcraftBuildingBlocks;
 import net.petersil98.utilcraft_building.data.capabilities.blueprint.CapabilityBlueprint;
-import net.petersil98.utilcraft_building.block_entities.BlueprintBlockEntity;
 import org.lwjgl.system.MemoryStack;
 
 import javax.annotation.Nonnull;
@@ -36,18 +41,6 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.List;
 import java.util.Random;
-
-import com.mojang.math.Matrix3f;
-import com.mojang.math.Matrix4f;
-import com.mojang.math.Quaternion;
-import com.mojang.math.Vector3f;
-import com.mojang.math.Vector4f;
-import net.minecraft.client.renderer.block.BlockModelShaper;
-import net.minecraft.core.Vec3i;
-import net.minecraft.world.level.block.AirBlock;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
-import net.minecraft.world.level.block.state.BlockState;
 
 public class BlueprintBlockTileEntityRenderer implements BlockEntityRenderer<BlueprintBlockEntity> {
 
@@ -65,7 +58,7 @@ public class BlueprintBlockTileEntityRenderer implements BlockEntityRenderer<Blu
 
     public void render(@Nonnull BlueprintBlockEntity tileEntity, float partialTicks, @Nonnull PoseStack matrixStack, @Nonnull MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
         Level world = tileEntity.getLevel();
-        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.defaultBlockState();
+        BlockState blockstate = world != null ? tileEntity.getBlockState() : UtilcraftBuildingBlocks.BLUEPRINT_BLOCK.get().defaultBlockState();
         Block block = blockstate.getBlock();
         if (block instanceof BlueprintBlock) {
             matrixStack.pushPose();
@@ -76,7 +69,6 @@ public class BlueprintBlockTileEntityRenderer implements BlockEntityRenderer<Blu
     }
 
     private void renderRotatingCube(@Nonnull BlueprintBlockEntity blockEntity, @Nonnull PoseStack matrixStack, @Nonnull MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
-        //Random rnd = new Random(blockEntity.getBlockPos().getX() * 337L + blockEntity.getBlockPos().getY() * 37L + blockEntity.getBlockPos().getZ() * 13L);
         VertexConsumer builder = buffer.getBuffer(RenderType.translucent());
         BakedModel model = this.minecraftInstance.getModelManager().getModel(CUBE_MODEL);
 

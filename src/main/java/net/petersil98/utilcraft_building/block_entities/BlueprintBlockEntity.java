@@ -21,7 +21,7 @@ public class BlueprintBlockEntity extends BlockEntity {
     private final LazyOptional<IBluePrint> blueprintOptional = LazyOptional.of(() -> blueprint);
 
     public BlueprintBlockEntity(BlockPos blockPos, BlockState blockState) {
-        super(UtilcraftBuildingBlockEntities.BLUEPRINT_BLOCK, blockPos, blockState);
+        super(UtilcraftBuildingBlockEntities.BLUEPRINT_BLOCK.get(), blockPos, blockState);
     }
 
     @Nonnull
@@ -49,7 +49,7 @@ public class BlueprintBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void invalidateCaps() {
+    public void invalidateCaps() {
         super.invalidateCaps();
         this.blueprintOptional.invalidate();
     }
