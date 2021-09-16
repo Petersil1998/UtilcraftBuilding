@@ -395,7 +395,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
     public void nextLayer() {
         if (this.hasNextLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
-            stack = this.updateBlueprintFromInventory(stack);
+            this.updateBlueprintFromInventory(stack);
             this.currentLayer++;
             this.updateInventoryFromBlueprint(stack);
             this.blueprintInventory.setItem(0, stack);
@@ -407,7 +407,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
     public void previousLayer() {
         if(this.hasPreviousLayer() && !playerEntity.level.isClientSide) {
             ItemStack stack = this.getBlueprint();
-            stack = this.updateBlueprintFromInventory(stack);
+            this.updateBlueprintFromInventory(stack);
             if(hasPreviousLayer()) {
                 this.currentLayer--;
             }
@@ -500,8 +500,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
         }
     }
 
-    @Nonnull
-    private ItemStack updateBlueprintFromInventory(@Nonnull ItemStack stack) {
+    private void updateBlueprintFromInventory(@Nonnull ItemStack stack) {
         AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
         List<List<List<BlockState>>> pattern = patternReference.get();
@@ -526,7 +525,6 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
             list.add(blockStates);
         }
         stack.getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> iBluePrint.setPattern(pattern));
-        return stack;
     }
 
     /**
