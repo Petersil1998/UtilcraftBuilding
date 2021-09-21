@@ -27,7 +27,7 @@ public class ArchitectTableScreen extends AbstractContainerScreen<ArchitectTable
 
     private static final ResourceLocation ARCHITECT_TABLE_GUI_TEXTURES = new ResourceLocation(UtilcraftBuilding.MOD_ID, "textures/gui/architect_table_gui.png");
     private static final ResourceLocation BUTTON_TEXTURE = new ResourceLocation(UtilcraftBuilding.MOD_ID, "textures/gui/button_arrow.png");
-    private TranslatableComponent layerText = new TranslatableComponent(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID),this.menu.getCurrentLayer()+1, this.menu.getCurrentMaxLayers());
+    private TranslatableComponent layerText = new TranslatableComponent(String.format("architect_table.%s.layer", UtilcraftBuilding.MOD_ID),this.menu.getCurrentLayer()+1, this.menu.getCurrentMaxLayers()+1);
     private ImageButton previousButton;
     private ImageButton nextButton;
     private ImageButton addLayerButton;
@@ -130,7 +130,7 @@ public class ArchitectTableScreen extends AbstractContainerScreen<ArchitectTable
         check = this.menu.hasPreviousLayer();
         this.previousButton.active = check;
         this.previousButton.visible = check;
-        check = this.menu.containsBlueprint() && this.menu.getCurrentMaxLayers() > 1;
+        check = this.menu.containsBlueprint() && this.menu.getCurrentMaxLayers() >= 1;
         this.removeLayerButton.active = check;
         this.removeLayerButton.visible = check;
         check = this.menu.containsBlueprint() && this.menu.getCurrentMaxLayers() < ArchitectTableContainer.MAX_LAYERS;
@@ -139,6 +139,6 @@ public class ArchitectTableScreen extends AbstractContainerScreen<ArchitectTable
     }
 
     private void updateTitle() {
-        this.layerText = new TranslatableComponent(this.layerText.getKey(), this.menu.getCurrentLayer()+1, this.menu.getCurrentMaxLayers());
+        this.layerText = new TranslatableComponent(this.layerText.getKey(), this.menu.getCurrentLayer()+1, this.menu.getCurrentMaxLayers()+1);
     }
 }

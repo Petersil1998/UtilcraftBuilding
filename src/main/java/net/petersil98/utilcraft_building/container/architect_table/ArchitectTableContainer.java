@@ -97,7 +97,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
                     maxLayer = 0;
                     currentInventory.clearContent();
                     broadcastChanges();
-                    syncData();
+                    syncLayerData();
                 }
             }
 
@@ -110,7 +110,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
                         currentInventory.clearContent();
                         updateInventoryFromBlueprint(this.getItem());
                         broadcastChanges();
-                        syncData();
+                        syncLayerData();
                     }
                 }
                 super.setChanged();
@@ -401,7 +401,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
             this.updateInventoryFromBlueprint(stack);
             this.blueprintInventory.setItem(0, stack);
             this.broadcastChanges();
-            this.syncData();
+            this.syncLayerData();
         }
     }
 
@@ -415,7 +415,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
             this.updateInventoryFromBlueprint(stack);
             this.blueprintInventory.setItem(0, stack);
             this.broadcastChanges();
-            this.syncData();
+            this.syncLayerData();
         }
     }
 
@@ -432,39 +432,38 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
     }
 
     public int getCurrentMaxLayers() {
-        return this.maxLayer+1;
+        return this.maxLayer;
     }
 
     public void addLayer() {
-        if(!playerEntity.level.isClientSide) {
+        if(!playerEntity.level.isClientSide && this.maxLayer < MAX_LAYERS) {
             this.maxLayer++;
             this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> {
-                List<List<BlockState>> emptyList = new ArrayList<>();
+                List<List<BlockState>> newList = new ArrayList<>();
                 for (int i = 0; i < SIZE; i++) {
                     List<BlockState> blockStates = new ArrayList<>();
                     for (int j = 0; j < SIZE; j++) {
                         blockStates.add(Blocks.AIR.defaultBlockState());
                     }
-                    emptyList.add(blockStates);
+                    newList.add(blockStates);
                 }
-                iBluePrint.getPattern().add(emptyList);
+                iBluePrint.getPattern().add(newList);
             });
             this.broadcastChanges();
-            this.syncData();
+            this.syncLayerData();
         }
     }
 
     public void removeCurrentLayer() {
         if(!playerEntity.level.isClientSide) {
-            AtomicReference<List<List<List<BlockState>>>> patternReference = new AtomicReference<>();
-            this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> patternReference.set(iBluePrint.getPattern()));
-            List<List<List<BlockState>>> pattern = patternReference.get();
-            pattern.remove(this.currentLayer);
+            this.getBlueprint().getCapability(CapabilityBlueprint.BLUEPRINT_CAPABILITY).ifPresent(iBluePrint -> iBluePrint.getPattern().remove(this.currentLayer));
             this.maxLayer--;
-            this.currentLayer--;
+            if(this.hasPreviousLayer()) {
+                this.currentLayer--;
+            }
             this.updateInventoryFromBlueprint(this.getBlueprint());
             this.broadcastChanges();
-            this.syncData();
+            this.syncLayerData();
         }
     }
 
@@ -553,7 +552,7 @@ public class ArchitectTableContainer extends AbstractContainerMenu {
         this.maxLayer = maxLayer;
     }
 
-    private void syncData() {
+    private void syncLayerData() {
         PacketHandler.sendToClient(new SyncArchitectTableDataPoint(this.currentLayer, this.maxLayer), (ServerPlayer) this.playerEntity);
     }
 
